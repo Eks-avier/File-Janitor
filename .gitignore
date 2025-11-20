@@ -1,0 +1,9 @@
+.cache
+.vscode
+build
+
+CMakeUserPresets.json
+.clangd
+
+app/bin
+resources

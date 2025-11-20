@@ -1,0 +1,164 @@
+---
+# Main checks organized by category
+Checks: >
+  *,
+  -fuchsia-*,
+  -google-*,
+  -zircon-*,
+  -abseil-*,
+  -llvm*,
+  -altera-*,
+  -hicpp-*,
+
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  performance-*,
+  portability-*,
+
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  readability-*,
+  -readability-braces-around-statements,
+  cppcoreguidelines-*,
+  misc-*,
+
+CheckOptions:
+  # Class and Struct naming
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+
+  # Member variables
+  - key: readability-identifier-naming.ClassMemberSuffix
+    value: "_"
+  - key: readability-identifier-naming.MemberCase
+    value: camelCase
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: "_"
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: camelCase
+  - key: readability-identifier-naming.ProtectedMemberSuffix
+    value: "_"
+  - key: readability-identifier-naming.ProtectedMemberCase
+    value: camelCase
+
+  # Static member variables
+  - key: readability-identifier-naming.StaticMemberPrefix
+    value: "s_"
+  - key: readability-identifier-naming.StaticMemberCase
+    value: camelCase
+
+  # Global variables
+  - key: readability-identifier-naming.GlobalVariablePrefix
+    value: "g_"
+  - key: readability-identifier-naming.GlobalVariableCase
+    value: camelCase
+
+  # Local variables and parameters
+  - key: readability-identifier-naming.LocalVariableCase
+    value: camelCase
+  - key: readability-identifier-naming.ParameterCase
+    value: camelCase
+
+  # Functions and methods
+  - key: readability-identifier-naming.FunctionCase
+    value: camelCase
+  - key: readability-identifier-naming.MethodCase
+    value: camelCase
+
+  # Constants and enums
+  - key: readability-identifier-naming.ConstantCase
+    value: camelCase
+  - key: readability-identifier-naming.ConstantMemberCase
+    value: camelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantCase
+    value: lower_case
+
+  # Templates and type aliases
+  - key: readability-identifier-naming.TemplateParameterCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypeAliasCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypedefCase
+    value: CamelCase
+
+  # Namespaces
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.NamespaceIgnoredRegexp
+    value: "^(fs|chrono|ranges|views)$"
+
+  # Identifier length constraints
+  - key: readability-identifier-length.MinimumVariableNameLength
+    value: 3
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: 2
+  - key: readability-identifier-length.IgnoredVariableNames
+    value: "^[ijk]$"
+  - key: readability-identifier-length.IgnoredParameterNames
+    value: "^[ijk]$"
+
+  # Magic numbers
+  - key: readability-magic-numbers.IgnoredIntegerValues
+    value: "0;1;2;3;4;5;"
+  - key: readability-magic-numbers.IgnoredFloatingPointValues
+    value: "0.0;1.0;"
+  - key: cppcoreguidelines-avoid-magic-numbers.IgnoredIntegerValues
+    value: "0;1;2;3;4;5;"
+  - key: cppcoreguidelines-avoid-magic-numbers.IgnoredFloatingPointValues
+    value: "0.0;1.0;"
+
+  # Code complexity
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 25
+  - key: readability-function-size.LineThreshold
+    value: 80
+  - key: readability-function-size.StatementThreshold
+    value: 50
+  - key: readability-function-size.BranchThreshold
+    value: 10
+  - key: readability-function-size.ParameterThreshold
+    value: 6
+
+  # Performance
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: true
+  - key: performance-unnecessary-value-param.AllowedTypes
+    value: ""
+  - key: performance-for-range-copy.WarnOnAllAutoCopies
+    value: true
+
+  # Class design
+  - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: true
+  - key: cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions
+    value: false
+
+  # Modern C++ preferences
+  - key: modernize-use-auto.MinTypeNameLength
+    value: 5
+  - key: modernize-use-auto.RemoveStars
+    value: false
+  - key: modernize-loop-convert.MinConfidence
+    value: reasonable
+  - key: modernize-use-nullptr.NullMacros
+    value: "NULL"
+
+  # String handling
+  - key: modernize-use-std-print.StrictMode
+    value: true
+  - key: readability-implicit-bool-conversion.AllowPointerConditions
+    value: true
+  - key: readability-implicit-bool-conversion.AllowIntegerConditions
+    value: false
+
+  # Include sorting
+  - key: readability-redundant-preprocessor.CheckIfCondition
+    value: true
+
+WarningsAsErrors: "*"

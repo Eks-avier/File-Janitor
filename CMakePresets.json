@@ -1,0 +1,285 @@
+{
+  "version": 10,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20
+  },
+  "configurePresets": [
+    {
+      "name": "ninja-base",
+      "hidden": true,
+      "description": "Base configuration for all Ninja builds with vcpkg manifest mode.",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "CMAKE_COLOR_DIAGNOSTICS": true,
+        "VCPKG_MANIFEST_MODE": true,
+        "VCPKG_MANIFEST_INSTALL": true
+      }
+    },
+    {
+      "name": "ninja-debug",
+      "hidden": true,
+      "description": "Debug build configuration with no optimization.",
+      "inherits": ["ninja-base"],
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS_DEBUG": "-g -O0",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/binary/debug",
+        "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/shared_libs",
+        "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/static_libs"
+      }
+    },
+    {
+      "name": "ninja-release",
+      "hidden": true,
+      "description": "Release build with full optimization.",
+      "inherits": ["ninja-base"],
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/binary/release",
+        "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/release/shared_libs",
+        "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/release/static_libs"
+      }
+    },
+    {
+      "name": "ninja-relwithdebinfo",
+      "hidden": true,
+      "description": "Release build with debug information for profiling.",
+      "inherits": ["ninja-base"],
+      "binaryDir": "${sourceDir}/build/relwithdebinfo",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_CXX_FLAGS_RELWITHDEBINFO": "-O2 -g -DNDEBUG",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/binary/relwithdebinfo",
+        "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/shared_libs",
+        "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/static_libs"
+      }
+    },
+    {
+      "name": "ninja-minsizerel",
+      "hidden": true,
+      "description": "Release build optimized for minimum binary size.",
+      "inherits": ["ninja-base"],
+      "binaryDir": "${sourceDir}/build/minsizerel",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_CXX_FLAGS_MINSIZEREL": "-Os -DNDEBUG",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/binary/minsizerel",
+        "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/minsizerel/shared_libs",
+        "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/minsizerel/static_libs"
+      }
+    },
+    {
+      "name": "ninja-asan",
+      "hidden": true,
+      "description": "Debug build with AddressSanitizer for memory error detection.",
+      "inherits": ["ninja-base"],
+      "binaryDir": "${sourceDir}/build/asan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS_DEBUG": "-g -O1 -fsanitize=address -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/binary/asan",
+        "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/asan/shared_libs",
+        "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/asan/static_libs"
+      }
+    },
+    {
+      "name": "ninja-ubsan",
+      "hidden": true,
+      "description": "Debug build with UndefinedBehaviorSanitizer for detecting undefined behavior.",
+      "inherits": ["ninja-base"],
+      "binaryDir": "${sourceDir}/build/ubsan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS_DEBUG": "-g -O1 -fsanitize=undefined -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=undefined",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/binary/ubsan",
+        "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/ubsan/shared_libs",
+        "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/ubsan/static_libs"
+      }
+    },
+    {
+      "name": "default-debug",
+      "hidden": true,
+      "displayName": "Default (Debug)",
+      "description": "Standard debug build.",
+      "inherits": ["ninja-debug"]
+    },
+    {
+      "name": "default-release",
+      "hidden": true,
+      "displayName": "Default (Release)",
+      "description": "Standard release build.",
+      "inherits": ["ninja-release"]
+    },
+    {
+      "name": "default-relwithdebinfo",
+      "hidden": true,
+      "displayName": "Default (RelWithDebInfo)",
+      "description": "Release with debug info.",
+      "inherits": ["ninja-relwithdebinfo"]
+    },
+    {
+      "name": "default-minsizerel",
+      "hidden": true,
+      "displayName": "Default (MinSizeRel)",
+      "description": "Minimum size release.",
+      "inherits": ["ninja-minsizerel"]
+    },
+    {
+      "name": "default-asan",
+      "hidden": true,
+      "displayName": "Default (ASan)",
+      "description": "AddressSanitizer build.",
+      "inherits": ["ninja-asan"]
+    },
+    {
+      "name": "default-ubsan",
+      "hidden": true,
+      "displayName": "Default (UBSan)",
+      "description": "UndefinedBehaviorSanitizer build.",
+      "inherits": ["ninja-ubsan"]
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default-debug",
+      "hidden": true,
+      "configurePreset": "default-debug",
+      "jobs": 0,
+      "verbose": false
+    },
+    {
+      "name": "default-release",
+      "hidden": true,
+      "configurePreset": "default-release",
+      "jobs": 0,
+      "verbose": false
+    },
+    {
+      "name": "default-relwithdebinfo",
+      "hidden": true,
+      "configurePreset": "default-relwithdebinfo",
+      "jobs": 0,
+      "verbose": false
+    },
+    {
+      "name": "default-minsizerel",
+      "hidden": true,
+      "configurePreset": "default-minsizerel",
+      "jobs": 0,
+      "verbose": false
+    },
+    {
+      "name": "default-asan",
+      "hidden": true,
+      "configurePreset": "default-asan",
+      "jobs": 0,
+      "verbose": false
+    },
+    {
+      "name": "default-ubsan",
+      "hidden": true,
+      "configurePreset": "default-ubsan",
+      "jobs": 0,
+      "verbose": false
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "default-debug",
+      "displayName": "Debug Workflow",
+      "description": "Complete debug workflow: configure and build",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "default-debug"
+        },
+        {
+          "type": "build",
+          "name": "default-debug"
+        }
+      ]
+    },
+    {
+      "name": "default-release",
+      "displayName": "Release Workflow",
+      "description": "Complete release workflow: configure and build",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "default-release"
+        },
+        {
+          "type": "build",
+          "name": "default-release"
+        }
+      ]
+    },
+    {
+      "name": "default-relwithdebinfo",
+      "displayName": "RelWithDebInfo Workflow",
+      "description": "Complete RelWithDebInfo workflow: configure and build",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "default-relwithdebinfo"
+        },
+        {
+          "type": "build",
+          "name": "default-relwithdebinfo"
+        }
+      ]
+    },
+    {
+      "name": "default-minsizerel",
+      "displayName": "MinSizeRel Workflow",
+      "description": "Complete MinSizeRel workflow: configure and build",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "default-minsizerel"
+        },
+        {
+          "type": "build",
+          "name": "default-minsizerel"
+        }
+      ]
+    },
+    {
+      "name": "default-asan",
+      "displayName": "AddressSanitizer Workflow",
+      "description": "Complete ASan workflow: configure and build",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "default-asan"
+        },
+        {
+          "type": "build",
+          "name": "default-asan"
+        }
+      ]
+    },
+    {
+      "name": "default-ubsan",
+      "displayName": "UndefinedBehaviorSanitizer Workflow",
+      "description": "Complete UBSan workflow: configure and build",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "default-ubsan"
+        },
+        {
+          "type": "build",
+          "name": "default-ubsan"
+        }
+      ]
+    }
+  ]
+}
