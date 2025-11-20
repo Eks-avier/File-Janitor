@@ -28,7 +28,41 @@ namespace
 
     constexpr auto g_NO_EXTENSION{ "~Empty"sv };
 
+    constexpr std::array g_KNOWN_EXTENSIONS{
+      std::pair{ ".png"sv,       "Images"sv        },
+      std::pair{ ".jpg"sv,       "Images"sv        },
+      std::pair{ ".svg"sv,       "Images"sv        },
+      std::pair{ ".docx"sv,      "Documents"sv     },
+      std::pair{ ".pdf"sv,       "Documents"sv     },
+      std::pair{ ".cpp"sv,       "Source Code"sv   },
+      std::pair{ ".py"sv,        "Source Code"sv   },
+      std::pair{ ".json"sv,      "Data Files"sv    },
+      std::pair{ ".csv"sv,       "Data Files"sv    },
+      std::pair{ ".md"sv,        "Markdown"sv      },
+      std::pair{ ".txt"sv,       "Text Files"sv    },
+      std::pair{ ".pptx"sv,      "Presentations"sv },
+      std::pair{ ".mp3"sv,       "Audio"sv         },
+      std::pair{ ".wav"sv,       "Audio"sv         },
+      std::pair{ g_NO_EXTENSION, "No Extension"sv  }
+    };
+
   } // namespace constants
+
+  constexpr auto get_folder_name(std::string_view extension) -> std::string_view
+  {
+    return [extension]
+    {
+      using namespace constants;
+
+      const auto* iterator{ std::ranges::find_if(
+            g_KNOWN_EXTENSIONS,
+            [extension](const auto& pair)
+            { return pair.first == extension; }) };
+
+      return iterator != g_KNOWN_EXTENSIONS.end() ? iterator->second
+                                                  : "Others"sv;
+    }();
+  }
 
   enum class FileOrganizerError : std::uint8_t
   {
