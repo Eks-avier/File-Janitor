@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <cstdint>
 #include <cstdio>
 #include <expected>
@@ -66,35 +67,6 @@ namespace
     directory_iterator_failed
   };
 
-  struct Folder
-  {
-    std::string        name;
-    std::optional<int> collision_suffix;
-
-    // clang-format off
-    std::variant<
-        std::vector<std::string_view>,
-        std::vector<std::string>
-    > extensions;
-    // clang-format on
-  };
-
-  auto create_folder(std::string_view         folder_name,
-                     std::vector<std::string> extensions)
-  {
-    return Folder{ .name{ folder_name },
-                   .collision_suffix{},
-                   .extensions{ std::move(extensions) } };
-  }
-
-  auto create_folder(std::string_view              folder_name,
-                     std::vector<std::string_view> extensions)
-  {
-    return Folder{ .name{ folder_name },
-                   .collision_suffix{},
-                   .extensions{ std::move(extensions) } };
-  }
-
   constexpr auto format_as(FileOrganizerError error) -> std::string_view
   {
     using enum FileOrganizerError;
@@ -105,6 +77,27 @@ namespace
     }
 
     return "Unknown error";
+  }
+
+  using ExtensionList =
+        std::variant<std::vector<std::string_view>, std::vector<std::string>>;
+
+  struct Folder
+  {
+    std::string        name;
+    std::optional<int> collision_suffix;
+    ExtensionList      extensions;
+  };
+
+  template <typename ExtensionsContainer>
+    requires std::same_as<ExtensionsContainer, std::vector<std::string>> or
+             std::same_as<ExtensionsContainer, std::vector<std::string_view>>
+  auto create_folder(std::string_view    folder_name,
+                     ExtensionsContainer extensions) -> Folder
+  {
+    return Folder{ .name{ folder_name },
+                   .collision_suffix{},
+                   .extensions{ std::move(extensions) } };
   }
 
   class DirectoryScanError
