@@ -2,7 +2,6 @@
 #include <array>
 #include <concepts>
 #include <cstdint>
-#include <cstdio>
 #include <expected>
 #include <filesystem>
 #include <flat_map>
@@ -60,6 +59,21 @@ namespace
           [extension](const auto& pair) { return pair.first == extension; }) };
 
     return iterator != g_KNOWN_EXTENSIONS.end() ? iterator->second : "Others"sv;
+  }
+
+  constexpr auto get_known_extension(std::string_view requested_extension)
+        -> std::optional<std::string_view>
+  {
+    using namespace constants;
+
+    const auto* iterator{ std::ranges::find_if(
+          g_KNOWN_EXTENSIONS,
+          [requested_extension](const auto& pair)
+          { return pair.first == requested_extension; }) };
+
+    return iterator != g_KNOWN_EXTENSIONS.end()
+                 ? std::make_optional(iterator->first)
+                 : std::nullopt;
   }
 
   enum class FileOrganizerError : std::uint8_t
@@ -123,12 +137,12 @@ namespace
     std::error_code    code_;
   };
 
-  auto is_valid_directory(const fs::path& directory) -> bool
+  [[maybe_unused]] auto is_valid_directory(const fs::path& directory) -> bool
   {
     return fs::exists(directory) and fs::is_directory(directory);
   }
 
-  auto collect_files_by_extension(const fs::path& dir)
+  [[maybe_unused]] auto collect_files_by_extension(const fs::path& dir)
         -> std::expected<FilesByExtension, DirectoryScanError>
   {
     using enum FileOrganizerError;
@@ -170,7 +184,7 @@ namespace
     return container;
   }
 
-  auto display_results(const FilesByExtension& files) -> void
+  [[maybe_unused]] auto display_results(const FilesByExtension& files) -> void
   {
     using namespace constants;
     namespace vws = std::views;
@@ -210,32 +224,5 @@ namespace
 
 auto main() -> int
 {
-  fs::path target_dir{
-    "./resources/test_files"
-  }; // or pass via command line argument later
-
-  if ( not is_valid_directory(target_dir) )
-  {
-    fmt::println(
-          stderr, "Error: '{}' is not a valid directory", target_dir.string());
-    return 1;
-  }
-
-  auto files{ collect_files_by_extension(target_dir) };
-
-  if ( !files )
-  {
-    fmt::println("{}", files.error().message());
-    return 0;
-  }
-
-  if ( files->empty() )
-  {
-    fmt::println("No files found in directory.");
-    return 0;
-  }
-
-  display_results(*files);
-
   return 0;
 }
