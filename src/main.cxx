@@ -9,12 +9,14 @@
 #include <fmt/format.h>
 #include <format>
 #include <functional>
+#include <optional>
 #include <print>
 #include <ranges>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace
@@ -65,6 +67,35 @@ namespace
   {
     directory_iterator_failed
   };
+
+  struct Folder
+  {
+    std::string        name;
+    std::optional<int> collision_suffix;
+
+    // clang-format off
+    std::variant<
+        std::vector<std::string_view>,
+        std::vector<std::string>
+    > extensions;
+    // clang-format on
+  };
+
+  auto create_folder(std::string_view         folder_name,
+                     std::vector<std::string> extensions)
+  {
+    return Folder{ .name{ folder_name },
+                   .collision_suffix{},
+                   .extensions{ std::move(extensions) } };
+  }
+
+  auto create_folder(std::string_view              folder_name,
+                     std::vector<std::string_view> extensions)
+  {
+    return Folder{ .name{ folder_name },
+                   .collision_suffix{},
+                   .extensions{ std::move(extensions) } };
+  }
 
   constexpr auto format_as(FileOrganizerError error) -> std::string_view
   {
