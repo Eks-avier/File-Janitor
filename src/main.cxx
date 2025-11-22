@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <filesystem>
@@ -8,8 +10,10 @@
 #include <fmt/base.h>
 #include <fmt/format.h>
 #include <functional>
+#include <iterator>
 #include <optional>
 #include <ranges>
+#include <scn/scan.h>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -78,7 +82,7 @@ namespace
 
   enum class FileOrganizerError : std::uint8_t
   {
-    directory_iterator_failed
+    directory_iterator_failed,
   };
 
   constexpr auto format_as(FileOrganizerError error) -> std::string_view
@@ -184,7 +188,75 @@ namespace
     return container;
   }
 
-  [[maybe_unused]] auto display_results(const FilesByExtension& files) -> void
+  [[nodiscard]] auto
+  get_existing_folders(const fs::path& target_directory) noexcept
+        -> std::expected<std::vector<std::string>, DirectoryScanError>
+  {
+    assert(is_valid_directory(target_directory));
+
+    using enum FileOrganizerError;
+
+    auto container{ std::vector<std::string>{} };
+    auto code{ std::error_code{} };
+
+    for ( auto iterator{ fs::directory_iterator(target_directory, code) };
+          iterator != fs::directory_iterator();
+          iterator.increment(code) )
+    {
+      if ( code )
+      {
+        return std::unexpected{
+          DirectoryScanError{ directory_iterator_failed, code }
+        };
+      }
+
+      const auto& entry{ *iterator };
+
+      if ( not entry.is_directory() )
+      {
+        continue;
+      }
+
+      container.emplace_back(entry.path().filename().string());
+    }
+
+    if ( code )
+    {
+      return std::unexpected{
+        DirectoryScanError{ directory_iterator_failed, code }
+      };
+    }
+
+    return container;
+  }
+
+  [[nodiscard]] auto find_collision_suffix(
+        std::string_view                base_name,
+        const std::vector<std::string>& existing_folder_names) noexcept
+        -> std::optional<int>
+  {
+    if ( not std::ranges::contains(existing_folder_names, base_name) )
+    {
+      return {};
+    }
+
+    auto suffixes{ std::vector<int>{} };
+
+    for ( const auto  fmt_string{ fmt::format("{} ({{}})", base_name) };
+          const auto& folder_name : existing_folder_names )
+    {
+      if ( auto result{ scn::scan<int>(
+                 folder_name, scn::runtime_format(fmt_string)) } )
+      {
+        suffixes.push_back(result->value());
+      }
+    }
+
+    return suffixes.empty() ? 1 : std::ranges::max(suffixes) + 1;
+  }
+
+  [[maybe_unused]] auto display_results(const FilesByExtension& files) noexcept
+        -> void
   {
     using namespace constants;
     namespace vws = std::views;
