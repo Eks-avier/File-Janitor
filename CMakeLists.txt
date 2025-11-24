@@ -46,7 +46,8 @@ target_compile_definitions(
 
 # Find third-party dependencies
 find_package(fmt CONFIG REQUIRED)
+find_package(scn CONFIG REQUIRED)
 
 add_executable(Main)
 target_sources(Main PRIVATE src/main.cxx)
-target_link_libraries(Main PRIVATE Headers fmt::fmt)
+target_link_libraries(Main PRIVATE Headers fmt::fmt scn::scn)

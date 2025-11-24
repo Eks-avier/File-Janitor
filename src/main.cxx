@@ -2,21 +2,21 @@
 #include <array>
 #include <cassert>
 #include <concepts>
-#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <filesystem>
 #include <flat_map>
+#include <flat_set>
 #include <fmt/base.h>
 #include <fmt/format.h>
 #include <functional>
-#include <iterator>
 #include <optional>
 #include <ranges>
 #include <scn/scan.h>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -25,14 +25,21 @@ namespace
 {
   namespace fs = std::filesystem;
 
-  using FilesByExtension =
-        std::flat_map<std::string, std::vector<fs::path>, std::less<>>;
+  template <typename... Types>
+  struct Overloaded : Types...
+  {
+    using Types::operator()...;
+  };
+
+  using FilesByExtension
+        = std::flat_map<std::string, std::vector<fs::path>, std::less<>>;
 
   namespace constants // g_ for global constants
   {
     using namespace std::string_view_literals;
 
     constexpr auto g_NO_EXTENSION{ "~Empty"sv };
+    constexpr auto g_OTHERS_FOLDER_NAME{ "Others"sv };
 
     constexpr auto g_KNOWN_EXTENSIONS{
       std::array{ std::pair{ ".png"sv, "Images"sv },
@@ -62,7 +69,8 @@ namespace
           g_KNOWN_EXTENSIONS,
           [extension](const auto& pair) { return pair.first == extension; }) };
 
-    return iterator != g_KNOWN_EXTENSIONS.end() ? iterator->second : "Others"sv;
+    return iterator != g_KNOWN_EXTENSIONS.end() ? iterator->second
+                                                : g_OTHERS_FOLDER_NAME;
   }
 
   constexpr auto get_known_extension(std::string_view requested_extension)
@@ -97,8 +105,8 @@ namespace
     return "Unknown error";
   }
 
-  using ExtensionList =
-        std::variant<std::vector<std::string_view>, std::vector<std::string>>;
+  using ExtensionList
+        = std::variant<std::vector<std::string_view>, std::vector<std::string>>;
 
   struct Folder
   {
@@ -108,8 +116,8 @@ namespace
   };
 
   template <typename ExtensionsContainer>
-    requires std::same_as<ExtensionsContainer, std::vector<std::string>> or
-             std::same_as<ExtensionsContainer, std::vector<std::string_view>>
+    requires std::same_as<ExtensionsContainer, std::vector<std::string>>
+             or std::same_as<ExtensionsContainer, std::vector<std::string_view>>
   auto create_folder(std::string_view    folder_name,
                      ExtensionsContainer extensions) -> Folder
   {
@@ -255,11 +263,71 @@ namespace
     return suffixes.empty() ? 1 : std::ranges::max(suffixes) + 1;
   }
 
+  auto collect_unique_folders(const FilesByExtension& files)
+        -> std::flat_set<std::string>
+  {
+    assert(not files.empty());
+
+    auto container{ std::flat_set<std::string>{} };
+
+    for ( const auto& [extension, _] : files ) // NOLINT
+    {
+      container.insert(get_folder_name(extension));
+    }
+
+    return container;
+  }
+
+  auto initialize_folder_groups(const std::flat_set<std::string>& folder_names)
+        -> std::flat_map<std::string, ExtensionList, std::less<>>
+  {
+    assert(not folder_names.empty());
+
+    return folder_names
+           | std::views::transform(
+                 [](const auto& folder_name)
+                 {
+                   return std::pair{
+                     folder_name,
+                     folder_name == constants::g_OTHERS_FOLDER_NAME
+                           ? ExtensionList{ std::vector<std::string>{} }
+                           : ExtensionList{ std::vector<std::string_view>{} }
+                   };
+                 })
+           | std::ranges::to<
+                 std::flat_map<std::string, ExtensionList, std::less<>>>();
+  }
+
+  auto populate_folder_extensions(
+        const FilesByExtension&                                 collected_files,
+        std::flat_map<std::string, ExtensionList, std::less<>>& folder_groups)
+        -> void
+  {
+    assert(not collected_files.empty() and not folder_groups.empty());
+
+    for ( const auto& [extension, _] : collected_files ) // NOLINT
+    {
+      auto folder_name{ get_folder_name(extension) };
+
+      std::visit(
+            Overloaded{
+                  [&extension](std::vector<std::string_view>& viewers)
+                  {
+                    if ( auto extension_view{ get_known_extension(extension) } )
+                    {
+                      viewers.push_back(*extension_view);
+                    }
+                  },
+                  [&extension](std::vector<std::string>& owners)
+                  { owners.push_back(extension); } },
+            folder_groups[folder_name]);
+    }
+  }
+
   [[maybe_unused]] auto display_results(const FilesByExtension& files) noexcept
         -> void
   {
     using namespace constants;
-    namespace vws = std::views;
 
     auto print_category{
       [](std::string_view extension, const std::vector<fs::path>& paths)
@@ -283,18 +351,18 @@ namespace
     fmt::println("Files organized by extension:\n");
 
     if ( auto iterator{ files.find(g_NO_EXTENSION) }; iterator != files.end() )
+    {
       print_category(iterator->first, iterator->second);
+    }
 
     for ( const auto& [extension, paths] :
-          files | vws::filter([](const auto& pair)
-                              { return pair.first != g_NO_EXTENSION; }) )
+          files
+                | std::views::filter([](const auto& pair)
+                                     { return pair.first != g_NO_EXTENSION; }) )
     {
       print_category(extension, paths);
     }
   }
 } // namespace
 
-auto main() -> int
-{
-  return 0;
-}
+auto main() -> int { return 0; }

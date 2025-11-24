@@ -43,7 +43,7 @@ AlignTrailingComments:
 AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortEnumsOnASingleLine: true
-AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: true
 AllowShortLambdasOnASingleLine: All
@@ -55,6 +55,8 @@ BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeComma
 BreakBeforeConceptDeclarations: Always
+BreakBeforeBinaryOperators: true
+BreakBinaryOperations: OnePerLine
 
 # Brace Wrapping
 BraceWrapping:
@@ -66,7 +68,7 @@ BraceWrapping:
   AfterNamespace: true
   AfterStruct: true
   BeforeCatch: false
-  BeforeElse: false
+  BeforeElse: true
   BeforeWhile: false
   IndentBraces: false
   SplitEmptyFunction: false
