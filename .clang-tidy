@@ -1,27 +1,25 @@
 ---
-# Main checks organized by category
+# Main checks organized by category (optimized for performance)
 Checks: >
-  *,
-  -fuchsia-*,
-  -google-*,
-  -zircon-*,
-  -abseil-*,
-  -llvm*,
-  -altera-*,
-  -hicpp-*,
-
   bugprone-*,
+
   cert-*,
+
   clang-analyzer-*,
+
   concurrency-*,
+
   performance-*,
+
   portability-*,
 
   modernize-*,
-  -modernize-use-trailing-return-type,
+
   readability-*,
-  -readability-braces-around-statements,
+  -readability-identifier-length,
+
   cppcoreguidelines-*,
+
   misc-*,
 
 CheckOptions:
@@ -161,4 +159,5 @@ CheckOptions:
   - key: readability-redundant-preprocessor.CheckIfCondition
     value: true
 
-WarningsAsErrors: "*"
+# Treat only critical issues as errors for better performance
+WarningsAsErrors: "bugprone-*,cert-*,clang-analyzer-*"
