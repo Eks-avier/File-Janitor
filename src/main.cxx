@@ -10,10 +10,8 @@
 #include <flat_set>
 #include <fmt/base.h>
 #include <fmt/color.h>
-#include <fmt/compile.h>
 #include <fmt/format.h>
 #include <functional>
-#include <iterator>
 #include <optional>
 #include <ranges>
 #include <scn/scan.h>
@@ -37,6 +35,11 @@ namespace
 
   using FilesByExtension
         = std::flat_map<std::string, std::vector<fs::path>, std::less<>>;
+
+  using ExtensionList
+        = std::variant<std::vector<std::string_view>, std::vector<std::string>>;
+
+  using FolderGroups = std::flat_map<std::string, ExtensionList, std::less<>>;
 
   namespace constants // g_ for global constants
   {
@@ -71,7 +74,8 @@ namespace
 
     const auto* iterator{ std::ranges::find_if(
           g_KNOWN_EXTENSIONS,
-          [extension](const auto& pair) { return pair.first == extension; }) };
+          [extension](const auto& pair) -> auto
+          { return pair.first == extension; }) };
 
     return iterator != g_KNOWN_EXTENSIONS.end() ? iterator->second
                                                 : g_OTHERS_FOLDER_NAME;
@@ -84,7 +88,7 @@ namespace
 
     const auto* iterator{ std::ranges::find_if(
           g_KNOWN_EXTENSIONS,
-          [requested_extension](const auto& pair)
+          [requested_extension](const auto& pair) -> auto
           { return pair.first == requested_extension; }) };
 
     return iterator != g_KNOWN_EXTENSIONS.end()
@@ -146,9 +150,6 @@ namespace
 
     return regular;
   }
-
-  using ExtensionList
-        = std::variant<std::vector<std::string_view>, std::vector<std::string>>;
 
   struct Folder
   {
@@ -279,7 +280,7 @@ namespace
     return container;
   }
 
-  [[nodiscard]] auto find_collision_suffix(
+  [[nodiscard]] auto get_collision_suffix(
         std::string_view                base_name,
         const std::vector<std::string>& existing_folder_names) noexcept
         -> std::optional<int>
@@ -304,137 +305,118 @@ namespace
     return suffixes.empty() ? 1 : std::ranges::max(suffixes) + 1;
   }
 
-  auto collect_unique_folders(const FilesByExtension& files)
-        -> std::flat_set<std::string>
+  [[maybe_unused]] auto create_folder_groups(const FilesByExtension& files)
+        -> FolderGroups
   {
     assert(not files.empty());
 
-    auto container{ std::flat_set<std::string>{} };
+    namespace vws = std::views;
+    namespace rng = std::ranges;
 
-    for ( const auto& [extension, _] : files ) // NOLINT
-    {
-      container.insert(get_folder_name(extension));
-    }
+    auto process_chunk{
+      [](auto chunk) -> std::pair<std::string, ExtensionList>
+      {
+        auto folder{ std::string_view{ chunk.front().first } };
+        auto extensions{ chunk | vws::values };
 
-    return container;
+        auto to_static_view{ [](auto&& extension) -> auto
+                             { return *get_known_extension(extension); } };
+
+        auto variant{
+          folder == constants::g_OTHERS_FOLDER_NAME
+                ? ExtensionList{ extensions
+                                 | rng::to<std::vector<std::string>>() }
+                : ExtensionList{ extensions
+                                 | vws::transform(to_static_view)
+                                 | rng::to<std::vector<std::string_view>>() }
+        };
+
+        return { std::string{ folder }, std::move(variant) };
+      }
+    };
+
+    auto grouped_pairs{
+      files
+      | vws::keys
+      | vws::transform(
+            [](const auto& extension) -> auto
+            { return std::pair{ get_folder_name(extension), extension }; })
+      | rng::to<std::vector<std::pair<std::string_view, std::string>>>()
+    };
+
+    rng::sort(grouped_pairs); // Sorts folder names and exts lexicographically
+
+    return grouped_pairs
+           | vws::chunk_by([](const auto& lhs, const auto& rhs) -> auto
+                           { return lhs.first == rhs.first; })
+           | vws::transform(process_chunk)
+           | rng::to<FolderGroups>();
   }
 
-  auto initialize_folder_groups(const std::flat_set<std::string>& folder_names)
-        -> std::flat_map<std::string, ExtensionList, std::less<>>
+  auto collect_folder_files(const ExtensionList&    extensions,
+                            const FilesByExtension& data_source)
+        -> std::vector<fs::path>
   {
-    assert(not folder_names.empty());
+    namespace vws = std::views;
+    namespace rng = std::ranges;
 
-    return folder_names
-           | std::views::transform(
-                 [](const auto& folder_name) -> auto
-                 {
-                   return std::pair{
-                     folder_name,
-                     folder_name == constants::g_OTHERS_FOLDER_NAME
-                           ? ExtensionList{ std::vector<std::string>{} }
-                           : ExtensionList{ std::vector<std::string_view>{} }
-                   };
-                 })
-           | std::ranges::to<
-                 std::flat_map<std::string, ExtensionList, std::less<>>>();
+    auto lookup_path{
+      [&](std::string_view extension) -> std::span<const fs::path>
+      {
+        if ( auto it{ data_source.find(extension) }; it != data_source.end() )
+        {
+          return it->second;
+        }
+        return {};
+      }
+    };
+
+    auto paths{ std::visit(
+          [&](const auto& extension_container) -> auto
+          {
+            return extension_container
+                   | vws::transform(lookup_path)
+                   | vws::join
+                   | rng::to<std::vector<fs::path>>();
+          },
+          extensions) };
+
+    rng::sort(paths);
+    return paths;
   }
 
-  auto populate_folder_extensions(
-        const FilesByExtension&                                 collected_files,
-        std::flat_map<std::string, ExtensionList, std::less<>>& folder_groups)
-        -> void
-  {
-    assert(not collected_files.empty() and not folder_groups.empty());
-
-    for ( const auto& [extension, _] : collected_files )
-    {
-      auto folder_name{ get_folder_name(extension) };
-
-      std::visit(
-            Overloaded{
-                  [&extension](std::vector<std::string_view>& viewers) -> void
-                  {
-                    if ( auto extension_view{ get_known_extension(extension) } )
-                    {
-                      viewers.push_back(*extension_view);
-                    }
-                  },
-                  [&extension](std::vector<std::string>& owners) -> void
-                  { owners.push_back(extension); } },
-            folder_groups[std::string{ folder_name }]);
-    }
-  }
-
-  using FolderGroups = std::flat_map<std::string, ExtensionList, std::less<>>;
-
-  auto create_folders_with_collision_detection(
-        FolderGroups&&                  folder_groups,
-        const std::vector<std::string>& existing_folders,
-        const FilesByExtension& files_by_extension) -> std::vector<Folder>
+  auto create_folders(FolderGroups&&                  folder_groups,
+                      const std::vector<std::string>& existing_folders,
+                      const FilesByExtension&         files_source)
+        -> std::vector<Folder>
   {
     assert(not folder_groups.empty());
 
-    auto folders{ std::vector<Folder>{} };
+    namespace vws = std::views;
+    namespace rng = std::ranges;
 
-    for ( auto&& folder_group : std::move(folder_groups) )
-    {
-      auto  folder_name{ std::string_view{ folder_group.first } };
-      auto& folder_extensions{ folder_group.second };
+    auto to_folder{
+      [&](auto&& group) -> Folder
+      {
+        auto  base_name{ std::string{ std::move(group.first) } };
+        auto& extensions{ group.second };
 
-      auto folder_suffix{ find_collision_suffix(
-            folder_name, existing_folders) };
+        auto suffix{ get_collision_suffix(base_name, existing_folders) };
+        auto category{ get_folder_category(base_name) };
 
-      auto get_files{
-        [](const FilesByExtension& files,
-           std::string_view extension) -> std::optional<std::vector<fs::path>>
-        {
-          return files.contains(extension)
-                       ? std::make_optional(files.at(extension))
-                       : std::nullopt;
-        }
-      };
+        auto files{ collect_folder_files(extensions, files_source) };
 
-      auto folder_files{ std::vector<fs::path>{} };
+        return { .base_name{ std::move(base_name) },
+                 .collision_suffix{ suffix },
+                 .category{ category },
+                 .extensions{ extensions },
+                 .files{ std::move(files) } };
+      }
+    };
 
-      std::visit(
-            Overloaded{
-                  [&files_by_extension, &folder_files, get_files](
-                        const std::vector<std::string_view>& viewing_extensions)
-                        -> void
-                  {
-                    for ( const auto extension : viewing_extensions )
-                    {
-                      auto files{ get_files(files_by_extension, extension) };
-                      folder_files.append_range(
-                            files ? *files : std::vector<fs::path>{});
-                    }
-                  },
-                  [&files_by_extension, &folder_files, get_files](
-                        const std::vector<std::string>& owning_extensions)
-                        -> void
-                  {
-                    for ( const auto& extension : owning_extensions )
-                    {
-                      auto files{ get_files(files_by_extension, extension) };
-                      folder_files.append_range(
-                            files ? *files : std::vector<fs::path>{});
-                    }
-                  } },
-            folder_extensions);
-
-      std::ranges::sort(folder_files);
-
-      auto folder_category{ get_folder_category(folder_name) };
-
-      folders.emplace_back(Folder{ .base_name{ folder_name },
-                                   .collision_suffix{ folder_suffix },
-                                   .category{ folder_category },
-                                   .extensions{ std::move(folder_extensions) },
-                                   .files{ folder_files } });
-    }
-
-    std::ranges::sort(folders, {}, &Folder::base_name);
-    return folders;
+    return std::move(folder_groups)
+           | vws::transform(to_folder)
+           | rng::to<std::vector<Folder>>();
   }
 
   auto create_organization_plan(const FilesByExtension& files,
@@ -443,21 +425,46 @@ namespace
   {
     assert(is_valid_directory(target_directory));
 
-    auto existing_folders{ get_existing_folders(target_directory) };
+    return get_existing_folders(target_directory)
+          .transform(
+                [&](const auto& existing) -> auto
+                {
+                  return create_folders(
+                        create_folder_groups(files), existing, files);
+                });
+  }
 
-    if ( not existing_folders )
+  [[maybe_unused]] auto
+  print_colliding_folders(const std::vector<Folder>& folders) -> void
+  {
+    assert(not folders.empty());
+
+    using namespace std::string_view_literals;
+
+    constexpr auto header_message{ "⚠️ COLLISION WARNINGS"sv };
+    constexpr auto header_format{ "{} ({} detected):\n"sv };
+
+    const auto styled_header{ fmt::styled(
+          header_message, fg(fmt::color::red) | fmt::emphasis::bold) };
+
+    fmt::print(header_format, styled_header, folders.size());
+
+    auto by_collision{ [](const Folder& folder) -> bool
+                       { return folder.collision_suffix.has_value(); } };
+
+    constexpr auto list_format{ "{:>4} {} -> {}\n"sv };
+    constexpr auto list_marker{ "•"sv };
+
+    const auto list_style{ fg(fmt::color::red) };
+
+    for ( const auto& folder : folders | std::views::filter(by_collision) )
     {
-      return std::unexpected{ existing_folders.error() };
+      fmt::print(list_style,
+                 list_format,
+                 list_marker,
+                 folder.base_name,
+                 get_resolved_name(folder));
     }
-
-    auto unique_folder_names{ collect_unique_folders(files) };
-
-    auto folder_groups{ initialize_folder_groups(unique_folder_names) };
-
-    populate_folder_extensions(files, folder_groups);
-
-    return create_folders_with_collision_detection(
-          std::move(folder_groups), *existing_folders, files);
   }
 
   auto display_organization_plan(const std::vector<Folder>& folders) -> void
@@ -479,32 +486,7 @@ namespace
     print_separator();
 
     // 1. COLLISION WARNING
-    auto colliding_folders{
-      folders
-      | std::views::filter([](const Folder& folder) -> bool
-                           { return folder.collision_suffix.has_value(); })
-      | std::ranges::to<std::vector<Folder>>()
-    };
-
-    constexpr auto warning_header{ "⚠️ COLLISION WARNINGS"sv };
-
-    fmt::print("{} ({} detected):\n",
-               fmt::styled(warning_header,
-                           fg(fmt::color::red) | fmt::emphasis::bold),
-               colliding_folders.size());
-
-    // PRINT COLLIDED FOLDERS
-    if ( not std::ranges::empty(colliding_folders) )
-    {
-      for ( const auto& folder : colliding_folders )
-      {
-        fmt::print("{:>4} {} -> {}\n",
-                   "•",
-                   fmt::styled(folder.base_name, fg(fmt::color::red)),
-                   fmt::styled(get_resolved_name(folder),
-                               fg(fmt::color::red) | fmt::emphasis::bold));
-      }
-    }
+    print_colliding_folders(folders);
 
     print_separator();
 
