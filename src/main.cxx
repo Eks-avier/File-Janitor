@@ -7,7 +7,6 @@
 #include <expected>
 #include <filesystem>
 #include <flat_map>
-#include <flat_set>
 #include <fmt/base.h>
 #include <fmt/color.h>
 #include <fmt/format.h>
@@ -18,7 +17,6 @@
 #include <string>
 #include <string_view>
 #include <system_error>
-#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -292,7 +290,7 @@ namespace
 
     auto suffixes{ std::vector<int>{} };
 
-    for ( auto        fmt_string{ fmt::format("{} ({})", base_name, "{}") };
+    for ( auto        fmt_string{ fmt::format("{} ({{}})", base_name) };
           const auto& folder_name : existing_folder_names )
     {
       if ( auto result{ scn::scan<int>(
@@ -434,144 +432,147 @@ namespace
                 });
   }
 
-  [[maybe_unused]] auto
-  print_colliding_folders(const std::vector<Folder>& folders) -> void
+  class FolderDisplayContext
   {
-    assert(not folders.empty());
-
-    using namespace std::string_view_literals;
-
-    constexpr auto header_message{ "⚠️ COLLISION WARNINGS"sv };
-    constexpr auto header_format{ "{} ({} detected):\n"sv };
-
-    const auto styled_header{ fmt::styled(
-          header_message, fg(fmt::color::red) | fmt::emphasis::bold) };
-
-    fmt::print(header_format, styled_header, folders.size());
-
-    auto by_collision{ [](const Folder& folder) -> bool
-                       { return folder.collision_suffix.has_value(); } };
-
-    constexpr auto list_format{ "{:>4} {} -> {}\n"sv };
-    constexpr auto list_marker{ "•"sv };
-
-    const auto list_style{ fg(fmt::color::red) };
-
-    for ( const auto& folder : folders | std::views::filter(by_collision) )
+  public:
+    explicit FolderDisplayContext(std::span<const Folder> folders)
+        : folders_(folders)
+    {}
+    // 1. Title Section
+    auto print_title() -> FolderDisplayContext&
     {
-      fmt::print(list_style,
-                 list_format,
-                 list_marker,
-                 folder.base_name,
-                 get_resolved_name(folder));
+      fmt::println("\n{:^{}}", "Organization Plan", separator_width_);
+      print_separator();
+      return *this;
     }
-  }
+
+    // 2. Collision Section
+    auto print_collisions() -> FolderDisplayContext&
+    {
+      using namespace std::string_view_literals;
+
+      auto has_collided = [](const Folder& f)
+      { return f.collision_suffix.has_value(); };
+
+      // Calculate count first (Fix: previously used total folders_.size())
+      auto       collision_view{ folders_ | std::views::filter(has_collided) };
+      const auto count{ std::ranges::distance(collision_view) };
+
+      // Early return: Don't have to show it, if it isn't needed!
+      if ( count == 0 )
+      {
+        return *this;
+      }
+
+      constexpr auto header_msg{ "⚠️ COLLISION WARNINGS"sv };
+      constexpr auto header_fmt{ "{} ({} detected):\n"sv };
+
+      fmt::print(
+            header_fmt,
+            fmt::styled(header_msg, fg(fmt::color::red) | fmt::emphasis::bold),
+            count);
+
+      constexpr auto item_fmt{ "{:>4} {} -> {}\n"sv };
+      const auto     item_style = fg(fmt::color::red);
+
+      for ( const auto& folder : collision_view )
+      {
+        fmt::print(item_style,
+                   item_fmt,
+                   "•",
+                   folder.base_name,
+                   get_resolved_name(folder));
+      }
+
+      print_separator(); // Separate warnings from content
+      return *this;
+    }
+
+    // 3. Category Section
+    auto print_category(FolderCategory category) -> FolderDisplayContext&
+    {
+      auto by_category = [category](const Folder& f)
+      { return f.category == category; };
+
+      for ( const auto& folder : folders_ | std::views::filter(by_category) )
+      {
+        print_single_folder(folder);
+      }
+      return *this;
+    }
+
+    // 4. Footer Section
+    auto print_summary() -> void // End of chain, returns void
+    {
+      using namespace std::views;
+
+      const auto total_folders = folders_.size();
+
+      // C++23 fold_left for file counting
+      const auto total_files = std::ranges::fold_left(
+            folders_
+                  | transform(&Folder::files)
+                  | transform(&std::vector<std::filesystem::path>::size),
+            0UZ,
+            std::plus<>{});
+
+      print_separator();
+      fmt::print(fg(fmt::color::green) | fmt::emphasis::bold,
+                 "Total: {} folders, {} files\n\n",
+                 total_folders,
+                 total_files);
+    }
+
+  private:
+    // --- Internal Helpers ---
+    static void print_separator()
+    {
+      fmt::println("\n{:═^{}}\n", separator_char_, separator_width_);
+    }
+
+    static void print_single_folder(const Folder& folder)
+    {
+      // Header
+      fmt::print("\n{}/\n",
+                 fmt::styled(get_resolved_name(folder),
+                             get_folder_style(folder.category)));
+
+      // Notification (File Count)
+      fmt::print(fg(fmt::color::dim_gray),
+                 "Will contain {} {}\n",
+                 fmt::styled(folder.files.size(),
+                             fg(fmt::color::white) | fmt::emphasis::bold),
+                 fmt::styled("files", fg(fmt::color::dim_gray)));
+
+      // File List
+      constexpr auto file_indent = 4;
+      for ( const auto& path : folder.files )
+      {
+        fmt::println(
+              "{0:>{1}} {2}", "-", file_indent, path.filename().string());
+      }
+    }
+
+    // --- State ---
+    std::span<const Folder> folders_;
+
+    static constexpr std::size_t      separator_width_{ 50 };
+    static constexpr std::string_view separator_char_{ "═" };
+  };
 
   auto display_organization_plan(const std::vector<Folder>& folders) -> void
   {
     assert(not folders.empty());
 
-    using namespace std::string_view_literals;
-    using namespace constants;
+    using enum FolderCategory;
 
-    constexpr auto separator{ "═"sv };
-    constexpr auto separator_size{ 50 };
-
-    auto print_separator{
-      [separator, separator_size] -> void
-      { fmt::println("\n{:═^{}}\n", separator, separator_size); }
-    };
-
-    fmt::println("\n{:^{}}", "Organization Plan", separator_size);
-    print_separator();
-
-    // 1. COLLISION WARNING
-    print_colliding_folders(folders);
-
-    print_separator();
-
-    constexpr auto notification_format{ "Will contain {} {}\n"sv };
-
-    const auto print_notification{
-      [notification_format](const std::size_t file_count) -> void
-      {
-        const auto message_continuation_style{ fmt::styled(
-              "files", fg(fmt::color::dim_gray)) };
-        const auto count_style{ fmt::styled(
-              file_count, fg(fmt::color::white) | fmt::emphasis::bold) };
-
-        fmt::print((fg(fmt::color::dim_gray)),
-                   notification_format,
-                   count_style,
-                   message_continuation_style);
-      }
-    };
-
-    constexpr auto file_list_marker{ '-' };
-    constexpr auto file_list_padding{ 4 };
-
-    static const auto file_list_format{ fmt::format(
-          "{0:>{1}} {{}}", file_list_marker, file_list_padding) };
-
-    auto print_folder_header{
-      [](const Folder& folder) -> void
-      {
-        fmt::print("\n{}/\n",
-                   fmt::styled(get_resolved_name(folder),
-                               get_folder_style(folder.category)));
-      }
-    };
-
-    auto print_folder_files{ [](const std::vector<fs::path>& paths) -> void
-                             {
-                               for ( const auto& path : paths )
-                               {
-                                 fmt::println(fmt::runtime(file_list_format),
-                                              path.filename().string());
-                               }
-                             } };
-
-    auto print_folders{
-      [print_notification, print_folder_files, print_folder_header](
-            const std::vector<Folder>& raw_folders,
-            FolderCategory             category) -> void
-      {
-        auto by_category{ std::views::filter(
-              [category](const Folder& folder) -> bool
-              { return folder.category == category; }) };
-
-        for ( const auto& folder : raw_folders | by_category )
-        {
-          print_folder_header(folder);
-          print_notification(folder.files.size());
-          print_folder_files(folder.files);
-        }
-      }
-    };
-
-    // 2. REGULAR FOLDERS
-    print_folders(folders, FolderCategory::regular);
-
-    // 3. OTHERS FOLDERS
-    print_folders(folders, FolderCategory::others);
-
-    // 4. NO EXTENSION FOLDERS
-    print_folders(folders, FolderCategory::no_extension);
-
-    // 5. FOOTER
-    const auto total_folders{ folders.size() };
-    const auto total_files = std::ranges::fold_left(
-          folders
-                | std::views::transform(&Folder::files)
-                | std::views::transform(&std::vector<fs::path>::size),
-          0UZ,
-          std::plus<>{});
-
-    print_separator();
-    fmt::print(fg(fmt::color::green) | fmt::emphasis::bold,
-               "Total: {} folders, {} files\n\n",
-               total_folders,
-               total_files);
+    FolderDisplayContext{ folders }
+          .print_title()
+          .print_collisions()
+          .print_category(regular)
+          .print_category(others)
+          .print_category(no_extension)
+          .print_summary();
   }
 
   [[maybe_unused]] auto display_results(const FilesByExtension& files) noexcept
@@ -605,7 +606,7 @@ namespace
       print_category(iterator->first, iterator->second);
     }
 
-    for ( const auto& [extension, paths] :
+    for ( auto&& [extension, paths] :
           files
                 | std::views::filter([](const auto& pair) -> auto
                                      { return pair.first != g_NO_EXTENSION; }) )
