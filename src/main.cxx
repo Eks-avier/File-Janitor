@@ -9,10 +9,10 @@ auto main() -> int
   using namespace file_janitor;
   namespace fs = std::filesystem;
 
-  fs::path target_dir = "./resources/test_files";
+  fs::path target_dir = "C:/Users/Xavier/Desktop/Xavier_CPP/CPP Serious Projects/FileJanitor/resources";
 
   // Validate directory
-  if ( !is_valid_directory(target_dir) )
+  if ( not is_valid_directory(target_dir) )
   {
     fmt::println(
           stderr, "Error: '{}' is not a valid directory", target_dir.string());
@@ -21,7 +21,7 @@ auto main() -> int
 
   // Collect files
   auto files_result = collect_files_by_extension(target_dir);
-  if ( !files_result )
+  if ( not files_result )
   {
     fmt::println(stderr, "Error: {}", files_result.error().message());
     return 1;
@@ -29,7 +29,7 @@ auto main() -> int
 
   // Create organization plan (Sprint 2!)
   auto plan_result = create_organization_plan(*files_result, target_dir);
-  if ( !plan_result )
+  if ( not plan_result )
   {
     fmt::println(stderr, "Error: {}", plan_result.error().message());
     return 1;
