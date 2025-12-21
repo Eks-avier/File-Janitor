@@ -2,14 +2,18 @@ cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
 project(FileJanitor LANGUAGES CXX)
 
-add_library(Headers INTERFACE)
+add_library(Headers INTERFACE
+        include/fs_ops.hxx
+        include/safe_fs.hxx
+        include/result_types.hxx)
 target_include_directories(Headers INTERFACE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(Headers INTERFACE stdc++exp)
+
+target_compile_features(Headers INTERFACE cxx_std_23)
 
 # Common warnings supported by both GCC and Clang
 target_compile_options(
   Headers
-  INTERFACE -fno-exceptions
+  INTERFACE
             # Core warnings
             -Wall
             -Wextra
@@ -40,6 +44,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
               -Wuseless-cast # Warn about useless casts
               -Wduplicated-cond # Warn about duplicated conditions in if-else
               -Wduplicated-branches) # Warn about duplicated branches
+#              $<$<CONFIG:Debug>:-fanalyzer>) # Static analysis in Debug builds
 endif()
 
 # Clang-specific warnings
@@ -48,7 +53,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     Headers
     INTERFACE -Wthread-safety # Clang's excellent thread safety analysis
               -Wloop-analysis # Detect suspicious loop constructs
-              -Wno-missing-braces) # Clang is overly strict on aggregate init
+              -Wno-missing-braces  # Clang is overly strict on aggregate init
+             )
+    target_link_libraries(Headers INTERFACE stdc++exp)
 endif()
 
 # Enable libstdc++ assertions in Debug builds
@@ -58,13 +65,17 @@ target_compile_definitions(
 # Find third-party dependencies
 find_package(fmt CONFIG REQUIRED)
 find_package(ctre CONFIG REQUIRED)
+find_package(scn CONFIG REQUIRED)
 
-add_executable(Main)
+add_executable(Main
+        src/fs_ops.cxx
+        src/safe_fs.cxx)
 target_sources(Main PRIVATE
   src/main.cxx
-  src/filesystem_ops.cxx
-  src/organization.cxx
-  src/display.cxx
 )
 
-target_link_libraries(Main PRIVATE Headers fmt::fmt ctre::ctre)
+target_link_libraries(Main PRIVATE Headers fmt::fmt)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_link_libraries(Main PRIVATE stdc++exp)
+endif()

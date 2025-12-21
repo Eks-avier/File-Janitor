@@ -3,14 +3,14 @@ Language: Cpp
 Standard: c++20
 
 # Line Length and Whitespace
-ColumnLimit: 80
+ColumnLimit: 100
 MaxEmptyLinesToKeep: 1
 KeepEmptyLinesAtTheStartOfBlocks: false
 InsertNewlineAtEOF: true
 
 # Indentation
 IndentWidth: 2
-ContinuationIndentWidth: 6
+ContinuationIndentWidth: 8
 IndentCaseBlocks: false
 NamespaceIndentation: All
 IndentPPDirectives: AfterHash
@@ -46,7 +46,7 @@ AllowShortEnumsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: true
-AllowShortLambdasOnASingleLine: All
+AllowShortLambdasOnASingleLine: Inline
 
 # Breaking
 AlwaysBreakBeforeMultilineStrings: true
@@ -55,7 +55,7 @@ BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeComma
 BreakBeforeConceptDeclarations: Always
-BreakBeforeBinaryOperators: true
+BreakBeforeBinaryOperators: NonAssignment
 BreakBinaryOperations: OnePerLine
 
 # Brace Wrapping
@@ -72,7 +72,7 @@ BraceWrapping:
   BeforeWhile: false
   IndentBraces: false
   SplitEmptyFunction: false
-  BeforeLambdaBody: true
+  BeforeLambdaBody: false
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
 

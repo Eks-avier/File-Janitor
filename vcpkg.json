@@ -1,6 +1,6 @@
 {
-  "dependencies": [
-    "fmt",
-    "ctre"
-  ]
+  "dependencies" : [ "ctre", "scnlib", {
+    "name" : "fmt",
+    "version>=" : "12.1.0"
+  } ]
 }

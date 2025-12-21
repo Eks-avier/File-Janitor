@@ -33,47 +33,47 @@ CheckOptions:
   - key: readability-identifier-naming.ClassMemberSuffix
     value: "_"
   - key: readability-identifier-naming.MemberCase
-    value: camelCase
+    value: lower_case
   - key: readability-identifier-naming.PrivateMemberSuffix
     value: "_"
   - key: readability-identifier-naming.PrivateMemberCase
-    value: camelCase
+    value: lower_case
   - key: readability-identifier-naming.ProtectedMemberSuffix
     value: "_"
   - key: readability-identifier-naming.ProtectedMemberCase
-    value: camelCase
+    value: lower_case
 
   # Static member variables
   - key: readability-identifier-naming.StaticMemberPrefix
     value: "s_"
   - key: readability-identifier-naming.StaticMemberCase
-    value: camelCase
+    value: lower_case
 
   # Global variables
   - key: readability-identifier-naming.GlobalVariablePrefix
     value: "g_"
   - key: readability-identifier-naming.GlobalVariableCase
-    value: camelCase
+    value: lower_case
 
   # Local variables and parameters
   - key: readability-identifier-naming.LocalVariableCase
-    value: camelCase
+    value: lower_case
   - key: readability-identifier-naming.ParameterCase
-    value: camelCase
+    value: lower_case
 
   # Functions and methods
   - key: readability-identifier-naming.FunctionCase
-    value: camelCase
+    value: lower_case
   - key: readability-identifier-naming.MethodCase
-    value: camelCase
+    value: lower_case
 
   # Constants and enums
   - key: readability-identifier-naming.ConstantCase
-    value: camelCase
+    value: lower_case
   - key: readability-identifier-naming.ConstantMemberCase
-    value: camelCase
+    value: lower_case
   - key: readability-identifier-naming.EnumCase
-    value: CamelCase
+    value: lower_case
   - key: readability-identifier-naming.EnumConstantCase
     value: lower_case
 
@@ -89,7 +89,7 @@ CheckOptions:
   - key: readability-identifier-naming.NamespaceCase
     value: lower_case
   - key: readability-identifier-naming.NamespaceIgnoredRegexp
-    value: "^(fs|chrono|ranges|views)$"
+    value: "^(fs|chrono|rng|vws)$"
 
   # Identifier length constraints
   - key: readability-identifier-length.MinimumVariableNameLength
@@ -146,6 +146,8 @@ CheckOptions:
     value: reasonable
   - key: modernize-use-nullptr.NullMacros
     value: "NULL"
+  - key: modernize-use-trailing-return-type.TransformLambdas
+    value: none
 
   # String handling
   - key: modernize-use-std-print.StrictMode
