@@ -3,21 +3,22 @@ Language: Cpp
 Standard: c++20
 
 # Line Length and Whitespace
-ColumnLimit: 100
+ColumnLimit: 85
 MaxEmptyLinesToKeep: 1
 KeepEmptyLinesAtTheStartOfBlocks: false
 InsertNewlineAtEOF: true
 
 # Indentation
+BracedInitializerIndentWidth: 5
 IndentWidth: 2
-ContinuationIndentWidth: 8
+ContinuationIndentWidth: 12
 IndentCaseBlocks: false
 NamespaceIndentation: All
 IndentPPDirectives: AfterHash
 IndentRequiresClause: true
 
 # Alignment
-AlignAfterOpenBracket: Align
+AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: Left
 AlignConsecutiveAssignments:
   Enabled: true
@@ -38,6 +39,8 @@ AlignOperands: Align
 AlignTrailingComments:
   Kind: Always
   OverEmptyLines: 1
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
 
 # Short Statements
 AllowShortBlocksOnASingleLine: Empty
@@ -78,14 +81,14 @@ BraceWrapping:
 
 # Packing
 BinPackArguments: false
-BinPackParameters: false
+BinPackParameters: OnePerLine
 PackConstructorInitializers: Never
 
 # Penalties
 PenaltyIndentedWhitespace: 1
 
 # C++ Specific
-Cpp11BracedListStyle: false
+Cpp11BracedListStyle: true
 FixNamespaceComments: true
 PointerAlignment: Left
 ReferenceAlignment: Left
@@ -109,9 +112,7 @@ SpaceBeforeParensOptions:
   AfterRequiresInExpression: true
 SpaceBeforeRangeBasedForLoopColon: true
 SpaceBeforeSquareBrackets: false
-SpaceInEmptyBlock: false
 SpacesInAngles: Never
-SpacesInContainerLiterals: true
 SpacesInParens: Custom
 SpacesInParensOptions:
   InConditionalStatements: true

@@ -25,9 +25,9 @@ Checks: >
 CheckOptions:
   # Class and Struct naming
   - key: readability-identifier-naming.ClassCase
-    value: CamelCase
+    value: lower_case
   - key: readability-identifier-naming.StructCase
-    value: CamelCase
+    value: lower_case
 
   # Member variables
   - key: readability-identifier-naming.ClassMemberSuffix
@@ -73,7 +73,7 @@ CheckOptions:
   - key: readability-identifier-naming.ConstantMemberCase
     value: lower_case
   - key: readability-identifier-naming.EnumCase
-    value: lower_case
+    value: CamelCase
   - key: readability-identifier-naming.EnumConstantCase
     value: lower_case
 
