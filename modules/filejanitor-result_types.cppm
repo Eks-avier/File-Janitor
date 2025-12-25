@@ -5,14 +5,10 @@ module;
 #include <expected>
 #include <filesystem>
 #include <system_error>
-#include <vector>
-
-// Include header in global module fragment for definitions
-#include "result_types.hxx"
 
 export module filejanitor:result_types;
 
-// Re-export type aliases (must redeclare for templates)
+// Define and export type aliases
 export template <typename T>
 using Result = std::expected<T, std::error_code>;
 

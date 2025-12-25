@@ -2,10 +2,17 @@
 // Created by Xavier on 12/25/2025.
 //
 
-import std;
+module;
 
-#include "fs_ops.hxx"
-#include "planner/planner.hxx"
+// Standard headers in GMF
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
+#include <ranges>
+#include <string>
+#include <vector>
+
+module filejanitor;
 
 namespace fs  = std::filesystem;
 namespace rng = std::ranges;

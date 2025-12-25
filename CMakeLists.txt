@@ -64,14 +64,6 @@ target_compile_definitions(
         CompileSettings INTERFACE $<$<CONFIG:Debug>:_GLIBCXX_ASSERTIONS>)
 
 # =============================================================================
-# LEGACY HEADERS: Include paths for traditional header includes in .cppm files
-# =============================================================================
-add_library(LegacyHeaders INTERFACE)
-target_include_directories(LegacyHeaders INTERFACE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/include/fs_ops)
-
-# =============================================================================
 # THIRD-PARTY DEPENDENCIES
 # =============================================================================
 find_package(fmt CONFIG REQUIRED)
@@ -121,7 +113,6 @@ target_sources(filejanitor
 # Link dependencies
 target_link_libraries(filejanitor
         PUBLIC CompileSettings
-        PRIVATE LegacyHeaders
         PRIVATE fmt::fmt)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

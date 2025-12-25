@@ -2,9 +2,16 @@
 // Created by Xavier on 12/25/2025.
 //
 
-import std;
+module;
 
-#include "executor/execution_report.hxx"
+// Standard headers in GMF
+#include <cstdint>
+#include <span>
+#include <vector>
+
+module filejanitor;
+
+// NO import std; - use GMF includes for consistency
 
 namespace fs_ops::executor
 {

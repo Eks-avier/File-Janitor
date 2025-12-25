@@ -1,7 +1,13 @@
-import std;
-import filejanitor;
+// Standard headers BEFORE fmt (fmt includes std headers internally)
+#include <filesystem>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include <fmt/ostream.h>
+
+import filejanitor;
 
 using namespace std::string_view_literals;
 using namespace std::string_literals;

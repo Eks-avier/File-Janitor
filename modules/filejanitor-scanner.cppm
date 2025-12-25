@@ -6,13 +6,15 @@ module;
 #include <system_error>
 #include <vector>
 
-// Include header in global module fragment
-#include "fs_ops/scanner/scanner.hxx"
-
 export module filejanitor:scanner;
 
-// Re-export types and functions from fs_ops::scanner namespace
+// Define and export types directly in the module
 export namespace fs_ops::scanner {
-    using ::fs_ops::scanner::file_collection;
-    using ::fs_ops::scanner::collect_files;
+    struct file_collection {
+        std::vector<std::filesystem::path> file_bin;
+        std::vector<std::error_code>       error_bin;
+    };
+
+    [[nodiscard]] auto collect_files(const std::filesystem::path& target_directory)
+        -> file_collection;
 }

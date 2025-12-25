@@ -2,9 +2,17 @@
 // Created by Xavier on 12/25/2025.
 //
 
-import std;
+module;
 
-#include "operation_result.hxx"
+// Standard headers in GMF
+#include <filesystem>
+#include <functional>
+#include <optional>
+#include <system_error>
+
+module filejanitor;
+
+// NO import std; - use GMF includes for consistency
 
 namespace fs_ops
 {

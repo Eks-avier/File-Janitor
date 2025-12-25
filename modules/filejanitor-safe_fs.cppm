@@ -3,24 +3,18 @@
 // Depends on: result_types
 module;
 
-#include <expected>
 #include <filesystem>
 #include <generator>
-#include <system_error>
-
-// Include headers in global module fragment
-#include "result_types.hxx"
-#include "safe_fs.hxx"
 
 export module filejanitor:safe_fs;
 
 // Re-export dependency partition
 export import :result_types;
 
-// Re-export functions from safe_fs namespace
+// Declare and export functions
 export namespace safe_fs {
-    using ::safe_fs::safe_scan;
-    using ::safe_fs::exists;
-    using ::safe_fs::rename;
-    using ::safe_fs::create_directories;
+    [[nodiscard]] auto safe_scan(std::filesystem::path path) -> std::generator<ScanResult>;
+    [[nodiscard]] auto exists(const std::filesystem::path& path) noexcept -> bool;
+    [[nodiscard]] auto rename(const std::filesystem::path& from, const std::filesystem::path& to) -> VoidResult;
+    [[nodiscard]] auto create_directories(const std::filesystem::path& path) -> VoidResult;
 }

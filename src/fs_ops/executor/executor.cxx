@@ -2,13 +2,23 @@
 // Created by Xavier on 12/25/2025.
 //
 
-import std;
+module;
+
+// Standard headers in GMF (before fmt to avoid conflicts)
+#include <algorithm>
+#include <expected>
+#include <filesystem>
+#include <functional>
+#include <optional>
+#include <ranges>
+#include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 
-#include "safe_fs.hxx"
-#include "result_types.hxx"
-#include "executor/executor.hxx"
+module filejanitor;
+
+// NO import std; - conflicts with #include in GMF
 
 namespace fs  = std::filesystem;
 namespace vws = std::views;

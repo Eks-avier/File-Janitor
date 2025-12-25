@@ -3,24 +3,44 @@
 // Depends on: fs_ops
 module;
 
-#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <optional>
-#include <string>
 #include <system_error>
 #include <utility>
-
-// Include headers in global module fragment
-#include "fs_ops/fs_ops.hxx"
-#include "fs_ops/operation_result.hxx"
 
 export module filejanitor:operation_result;
 
 // Re-export dependency partition
 export import :fs_ops;
 
-// Re-export operation_result class
+// Define and export operation_result class
 export namespace fs_ops {
-    using ::fs_ops::operation_result;
+    class operation_result {
+    public:
+        operation_result() = delete;
+
+        static auto create_success() -> operation_result;
+        static auto create_failure(const successful_operation& o, std::error_code ec) -> operation_result;
+        static auto create_skipped() -> operation_result;
+
+        [[nodiscard]] auto status() const -> operation_status;
+        [[nodiscard]] auto failure() const -> std::optional<std::reference_wrapper<const failed_operation>>;
+
+    private:
+        failed_operation failure_{};
+        operation_status status_{};
+
+        explicit operation_result(operation_status status);
+
+        template <typename Self>
+        auto with_failure(this Self&& self, const successful_operation& op, std::error_code ec) -> operation_result {
+            self.failure_ = failed_operation{
+                .source{op.source},
+                .destination{op.destination},
+                .error{ec}
+            };
+            return std::forward<Self>(self);
+        }
+    };
 }

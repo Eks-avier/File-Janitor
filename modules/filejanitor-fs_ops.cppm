@@ -7,16 +7,36 @@ module;
 #include <string>
 #include <system_error>
 
-// Include header in global module fragment
-#include "fs_ops/fs_ops.hxx"
-
 export module filejanitor:fs_ops;
 
-// Re-export types from fs_ops namespace
+// Define and export types directly in the module
 export namespace fs_ops {
-    using ::fs_ops::scanned_file;
-    using ::fs_ops::candidate;
-    using ::fs_ops::operation_status;
-    using ::fs_ops::successful_operation;
-    using ::fs_ops::failed_operation;
+    struct scanned_file {
+        std::filesystem::path path;
+        std::string           extension;
+    };
+
+    struct candidate {
+        std::filesystem::path parent;
+        std::string           stem;
+        std::string           extension;
+    };
+
+    enum class operation_status : std::int8_t {
+        failure,
+        success,
+        skipped,
+    };
+
+    struct successful_operation {
+        std::filesystem::path source;
+        std::filesystem::path destination;
+        std::string           bucket_name;
+    };
+
+    struct failed_operation {
+        std::filesystem::path source;
+        std::filesystem::path destination;
+        std::error_code       error;
+    };
 }

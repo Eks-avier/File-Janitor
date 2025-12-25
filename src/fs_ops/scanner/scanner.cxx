@@ -2,11 +2,18 @@
 // Created by Xavier on 12/25/2025.
 //
 
-import std;
+module;
 
-#include "safe_fs.hxx"
-#include "result_types.hxx"
-#include "scanner/scanner.hxx"
+// Standard headers in GMF
+#include <algorithm>
+#include <filesystem>
+#include <ranges>
+#include <span>
+#include <vector>
+
+module filejanitor;
+
+// NO import std; - use GMF includes for consistency
 
 namespace fs  = std::filesystem;
 namespace rng = std::ranges;

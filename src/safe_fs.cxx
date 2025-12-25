@@ -2,11 +2,17 @@
 // Created by Xavier on 12/16/2025.
 //
 
-#include "safe_fs.hxx"
-#include "result_types.hxx"
+module;
+
+// Standard headers in GMF
+#include <expected>
 #include <filesystem>
 #include <generator>
 #include <system_error>
+
+module filejanitor;
+
+// NO import std; - use GMF includes for consistency
 
 namespace fs = std::filesystem;
 
