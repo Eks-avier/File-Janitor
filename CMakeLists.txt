@@ -1,20 +1,21 @@
 cmake_minimum_required(VERSION 4.0.0 FATAL_ERROR)
 
+# Enable C++20 modules with import std support
 set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD d0edc3af-4c50-42ea-a356-e2862fe7a444)
 set(CMAKE_CXX_MODULE_STD ON)
 
 project(FileJanitor LANGUAGES CXX)
 
-add_library(Headers INTERFACE)
-target_include_directories(Headers INTERFACE ${CMAKE_SOURCE_DIR}/include)
-
-target_compile_features(Headers INTERFACE cxx_std_26)
+# =============================================================================
+# COMPILE SETTINGS: Common compilation flags and features
+# =============================================================================
+add_library(CompileSettings INTERFACE)
+target_compile_features(CompileSettings INTERFACE cxx_std_26)
 
 # Common warnings supported by both GCC and Clang
 target_compile_options(
-        Headers
+        CompileSettings
         INTERFACE
-        -fmodules
         # Core warnings
         -Wall
         -Wextra
@@ -39,74 +40,117 @@ target_compile_options(
 
 # GCC-specific warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  target_compile_options(
-          Headers
-          INTERFACE -Wlogical-op # Warn about suspicious uses of logical operators
-          -Wuseless-cast # Warn about useless casts
-          -Wduplicated-cond # Warn about duplicated conditions in if-else
-          -Wduplicated-branches) # Warn about duplicated branches
-  #              $<$<CONFIG:Debug>:-fanalyzer>) # Static analysis in Debug builds
+    target_compile_options(
+            CompileSettings
+            INTERFACE
+            -Wlogical-op
+            -Wuseless-cast
+            -Wduplicated-cond
+            -Wduplicated-branches)
 endif ()
 
 # Clang-specific warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  target_compile_options(
-          Headers
-          INTERFACE -Wthread-safety # Clang's excellent thread safety analysis
-          -Wloop-analysis # Detect suspicious loop constructs
-          -Wno-missing-braces  # Clang is overly strict on aggregate init
-  )
-  target_link_libraries(Headers INTERFACE stdc++exp)
+    target_compile_options(
+            CompileSettings
+            INTERFACE
+            -Wthread-safety
+            -Wloop-analysis
+            -Wno-missing-braces)
 endif ()
 
 # Enable libstdc++ assertions in Debug builds
 target_compile_definitions(
-        Headers INTERFACE $<$<CONFIG:Debug>:_GLIBCXX_ASSERTIONS>)
+        CompileSettings INTERFACE $<$<CONFIG:Debug>:_GLIBCXX_ASSERTIONS>)
 
-# Find third-party dependencies
+# =============================================================================
+# LEGACY HEADERS: Include paths for traditional header includes in .cppm files
+# =============================================================================
+add_library(LegacyHeaders INTERFACE)
+target_include_directories(LegacyHeaders INTERFACE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/fs_ops)
+
+# =============================================================================
+# THIRD-PARTY DEPENDENCIES
+# =============================================================================
 find_package(fmt CONFIG REQUIRED)
 find_package(scn CONFIG REQUIRED)
 
-set(FS_OPS_PATH src/fs_ops)
-set(FS_OPS_PLANNER_PATH ${FS_OPS_PATH}/planner)
-set(FS_OPS_SCANNER_PATH ${FS_OPS_PATH}/scanner)
-set(FS_OPS_EXECUTOR_PATH ${FS_OPS_PATH}/executor)
+# =============================================================================
+# MODULE LIBRARY: filejanitor
+# =============================================================================
+add_library(filejanitor)
 
-add_library(fs_ops_headers INTERFACE)
-target_include_directories(fs_ops_headers INTERFACE ${CMAKE_SOURCE_DIR}/include/fs_ops)
-target_compile_features(fs_ops_headers INTERFACE cxx_std_26)
-target_compile_options(fs_ops_headers INTERFACE -fmodules)
+# Module interface units (CXX_MODULES file set)
+target_sources(filejanitor
+        PUBLIC
+        FILE_SET CXX_MODULES
+        BASE_DIRS ${CMAKE_SOURCE_DIR}/modules
+        FILES
+        # Primary module interface
+        modules/filejanitor.cppm
 
-add_library(scanner)
-target_sources(scanner PRIVATE ${FS_OPS_SCANNER_PATH}/scanner.cxx)
-target_link_libraries(scanner PRIVATE fs_ops_headers)
+        # Foundation partitions (no internal deps)
+        modules/filejanitor-result_types.cppm
+        modules/filejanitor-fs_ops.cppm
+        modules/filejanitor-scanner.cppm
 
-add_library(planner)
-target_sources(planner PRIVATE ${FS_OPS_PLANNER_PATH}/planner.cxx)
-target_link_libraries(planner PRIVATE fs_ops_headers)
+        # Dependency layer partitions
+        modules/filejanitor-safe_fs.cppm
+        modules/filejanitor-movement_plan.cppm
+        modules/filejanitor-operation_result.cppm
+        modules/filejanitor-execution_report.cppm
 
-add_library(executor)
-target_sources(executor PRIVATE ${FS_OPS_EXECUTOR_PATH}/executor.cxx)
-target_link_libraries(executor PRIVATE fs_ops_headers PRIVATE fmt::fmt PRIVATE Headers)
-
-add_library(fs_ops)
-target_sources(fs_ops PRIVATE src/fs_ops/operation_result.cpp)
-target_link_libraries(fs_ops PUBLIC fs_ops_headers)
-
-add_executable(Main src/main.cxx)
-target_sources(Main PRIVATE
-        src/safe_fs.cxx
+        # Aggregation layer partitions
+        modules/filejanitor-planner.cppm
+        modules/filejanitor-executor.cppm
 )
-target_link_libraries(Main PRIVATE Headers fmt::fmt fs_ops)
+
+# Implementation sources
+target_sources(filejanitor
+        PRIVATE
+        src/safe_fs.cxx
+        src/fs_ops/scanner/scanner.cxx
+        src/fs_ops/planner/planner.cxx
+        src/fs_ops/executor/executor.cxx
+        src/fs_ops/executor/execution_report.cxx
+        src/fs_ops/operation_result.cpp
+)
+
+# Link dependencies
+target_link_libraries(filejanitor
+        PUBLIC CompileSettings
+        PRIVATE LegacyHeaders
+        PRIVATE fmt::fmt)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  target_link_libraries(Main PRIVATE stdc++exp)
+    target_link_libraries(filejanitor PRIVATE stdc++exp)
 endif ()
 
-# TEST FOLDER STUFF
-# 1. Define the source and destination
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_link_libraries(filejanitor PRIVATE stdc++exp)
+endif ()
+
+# =============================================================================
+# EXECUTABLE: Main
+# =============================================================================
+add_executable(Main src/main.cxx)
+target_link_libraries(Main
+        PRIVATE filejanitor
+        PRIVATE fmt::fmt)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_link_libraries(Main PRIVATE stdc++exp)
+endif ()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_link_libraries(Main PRIVATE stdc++exp)
+endif ()
+
+# =============================================================================
+# TEST RESOURCES
+# =============================================================================
 set(RESOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources/sandbox")
 set(DEST_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources/sandbox")
-
-# 2. Copy resources to the build folder during configuration
 file(COPY ${RESOURCE_DIR} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})

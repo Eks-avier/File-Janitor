@@ -3,7 +3,8 @@
 //
 
 import std;
-import "executor/execution_report.hxx";
+
+#include "executor/execution_report.hxx"
 
 namespace fs_ops::executor
 {

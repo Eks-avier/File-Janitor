@@ -4,7 +4,7 @@
 
 import std;
 
-import "operation_result.hxx";
+#include "operation_result.hxx"
 
 namespace fs_ops
 {

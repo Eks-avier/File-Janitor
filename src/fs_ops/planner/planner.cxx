@@ -2,12 +2,10 @@
 // Created by Xavier on 12/25/2025.
 //
 
-import std.compat;
+import std;
 
-import <ranges>;
-
-import "fs_ops.hxx";
-import "planner/planner.hxx";
+#include "fs_ops.hxx"
+#include "planner/planner.hxx"
 
 namespace fs  = std::filesystem;
 namespace rng = std::ranges;

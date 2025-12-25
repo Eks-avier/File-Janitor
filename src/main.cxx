@@ -1,12 +1,7 @@
 import std;
+import filejanitor;
 
-// THIRD PARTY
-import "fmt/ostream.h";
-
-// PROGRAM-SPECIFIC
-import "planner/planner.hxx";
-import "scanner/scanner.hxx";
-import "executor/executor.hxx";
+#include <fmt/ostream.h>
 
 using namespace std::string_view_literals;
 using namespace std::string_literals;

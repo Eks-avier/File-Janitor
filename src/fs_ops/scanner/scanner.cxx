@@ -4,9 +4,9 @@
 
 import std;
 
-import "safe_fs.hxx";
-import "result_types.hxx";
-import "scanner/scanner.hxx";
+#include "safe_fs.hxx"
+#include "result_types.hxx"
+#include "scanner/scanner.hxx"
 
 namespace fs  = std::filesystem;
 namespace rng = std::ranges;

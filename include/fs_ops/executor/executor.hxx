@@ -5,7 +5,7 @@
 #ifndef FILEJANITOR_EXECUTOR_HXX
 #define FILEJANITOR_EXECUTOR_HXX
 
-#include "executor/execution_report.hxx";
+#include "executor/execution_report.hxx"
 #include "movement_plan.hxx"
 
 namespace fs_ops::executor
