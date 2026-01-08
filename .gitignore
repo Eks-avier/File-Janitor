@@ -1,6 +1,7 @@
 .cache
 .vscode
 .claude
+.idea
 
 build
 
