@@ -2,7 +2,6 @@
 // Exports: file_collection, collect_files()
 module;
 
-#include <algorithm>
 #include <expected>
 #include <filesystem>
 #include <span>
@@ -18,8 +17,7 @@ export namespace fs_ops::scanner {
     std::vector<std::error_code>       error_bin;
   };
 
-  [[nodiscard]] auto collect_files(const std::filesystem::path& target_directory)
-              -> file_collection;
+  [[nodiscard]] auto collect_files(const std::filesystem::path& target_directory) -> file_collection;
 } // namespace fs_ops::scanner
 
 export namespace fs_ops::new_scanner {
@@ -34,31 +32,30 @@ export namespace fs_ops::new_scanner {
       scanned_errors errors;
     };
 
-    enum class scanner_state { target_not_found, no_files, no_errors };
+    enum class scanner_state { target_not_found, no_files };
 
-    using result = std::expected<scanned_result, scanner_state>;
+    template <typename T>
+    using result_type = std::expected<T, scanner_state>;
 
-    static auto collect_from(const std::filesystem::path& target) noexcept -> scanner;
-
-    // TODO: Refactor into chainable member functions
-
-    auto has_errors() const noexcept -> bool;
-    auto has_files() const noexcept -> bool;
-
-    auto errors() const noexcept -> scanned_errors;
+    static auto collect_from(const std::filesystem::path& target) noexcept -> result_type<scanner>;
 
     auto view() const noexcept -> collection_view;
     auto own() const noexcept -> scanned_files;
 
   private:
     using scan_result = std::expected<std::filesystem::directory_entry, std::error_code>;
+    friend class result_type<scanner>;
+
+    struct key_t {};
+    static constexpr key_t passkey{};
 
     explicit scanner(scanned_result result) noexcept;
+    explicit scanner(key_t, scanned_result result) noexcept;
 
-    static auto exists(const std::filesystem::path& target) noexcept -> bool;
-    static auto scan_from(const std::filesystem::path& target) noexcept -> std::vector<scan_result>;
-    static auto partition(std::vector<scan_result>&& results) noexcept -> std::vector<scan_result>;
-    static auto make_result(std::vector<scan_result>&& results) noexcept -> scanned_result;
+    static auto exists(const std::filesystem::path& target) noexcept -> result_type<std::filesystem::path>;
+    static auto scan(const std::filesystem::path& target) noexcept -> result_type<std::vector<scan_result>>;
+    static auto to_partitioned(std::vector<scan_result> raw) noexcept -> std::vector<scan_result>;
+    static auto to_scanned(std::vector<scan_result> partitioned) noexcept -> scanned_result;
 
     scanned_result m_result;
   };

@@ -4,7 +4,6 @@
 
 module;
 
-// Standard headers in GMF
 #include <algorithm>
 #include <filesystem>
 #include <ranges>
@@ -35,59 +34,76 @@ namespace fs_ops::scanner {
     // 4. Collect errors
     return [raw_results{get_raw_results(target_directory)}] mutable {
       return [raw_begin{raw_results.begin()}, split_point{split(raw_results)}] -> file_collection {
-        return {.file_bin{std::span{raw_begin, split_point.begin()}
-                          | vws::filter([](const ScanResult& r) { return r->is_regular_file(); })
-                          | vws::transform([](const ScanResult& r) { return r->path(); })
-                          | rng::to<std::vector>()},
-                .error_bin{std::span{split_point}
-                           | vws::transform([](const ScanResult& r) { return r.error(); })
-                           | rng::to<std::vector>()}};
+        return {
+             .file_bin{
+                  std::span{raw_begin, split_point.begin()}
+                  | vws::filter([](const ScanResult& r) { return r->is_regular_file(); })
+                  | vws::transform([](const ScanResult& r) { return r->path(); })
+                  | rng::to<std::vector>()
+             },
+             .error_bin{
+                  std::span{split_point}
+                  | vws::transform([](const ScanResult& r) { return r.error(); })
+                  | rng::to<std::vector>()
+             }
+        };
       }();
     }();
   }
 } // namespace fs_ops::scanner
 
 namespace fs_ops::new_scanner {
-
-  auto scanner::collect_from(const fs::path& target) noexcept -> scanner {
-    auto raw_files{scan_from(target)}; // TODO: Make expected, then chain operations.
-    auto partitioned{partition(std::move(raw_files))};
-    return scanner{make_result(std::move(partitioned))};
+  auto scanner::collect_from(const fs::path& target) noexcept -> result_type<scanner> {
+    const auto result{exists(target).and_then(scan).transform(to_partitioned).transform(to_scanned)};
+    return result.has_value() ? result_type<scanner>{std::in_place, passkey, *result}
+                              : result_type<scanner>{std::unexpect, result.error()};
   }
 
-  auto scanner::has_errors() const noexcept -> bool { return m_result.errors.empty(); }
-  auto scanner::has_files() const noexcept -> bool { return m_result.files.empty(); }
-  auto scanner::errors() const noexcept -> scanned_errors { return m_result.errors; }
   auto scanner::view() const noexcept -> collection_view { return m_result.files; }
   auto scanner::own() const noexcept -> scanned_files { return m_result.files; }
 
   scanner::scanner(scanned_result result) noexcept
       : m_result{std::move(result)} {}
 
-  auto scanner::exists(const fs::path& target) noexcept -> bool { return safe_fs::exists(target); }
+  scanner::scanner(key_t, scanned_result result) noexcept
+      : m_result{std::move(result)} {}
 
-  auto scanner::scan_from(const fs::path& target) noexcept -> std::vector<scan_result> {
-    return rng::to<std::vector>(safe_fs::safe_scan(target));
+  auto scanner::exists(const fs::path& target) noexcept -> result_type<std::filesystem::path> {
+    return safe_fs::exists(target) ? result_type<fs::path>{std::in_place, target}
+                                   : result_type<fs::path>{std::unexpect, scanner_state::target_not_found};
   }
 
-  auto scanner::partition(std::vector<scan_result>&& results) noexcept -> std::vector<scan_result> {
-    auto to_partition{std::move(results)};
-    auto predicate{[](const auto& result) { return result.has_value(); }};
-    rng::partition(to_partition, predicate);
+  auto scanner::scan(const fs::path& target) noexcept -> result_type<std::vector<scan_result>> {
+    const auto result = rng::to<std::vector>(safe_fs::safe_scan(target));
+    return result.empty() ? result_type<std::vector<scan_result>>{std::unexpect, scanner_state::no_files}
+                          : result_type<std::vector<scan_result>>{std::in_place, result};
+  }
+
+  auto scanner::to_partitioned(std::vector<scan_result> raw) noexcept -> std::vector<scan_result> {
+    auto to_partition{std::move(raw)};
+    rng::partition(to_partition, [](const auto& result) { return result.has_value(); });
     return to_partition;
   }
 
-  auto scanner::make_result(std::vector<scan_result>&& results) noexcept -> scanned_result {
-    const auto predicate{[](const auto& result) { return result.has_value(); }};
-    const auto partition_point{rng::partition_point(results, predicate)};
-
-    return {.files{std::span{results.cbegin(), partition_point}
-                   | vws::filter([](const scan_result& r) { return r->is_regular_file(); })
-                   | vws::transform([](const scan_result& r) { return r->path(); })
-                   | rng::to<std::vector>()},
-            .errors{std::span{partition_point, results.cend()}
-                    | vws::transform([](const scan_result& r) { return r.error(); })
-                    | rng::to<std::vector>()}};
+  auto scanner::to_scanned(std::vector<scan_result> partitioned) noexcept -> scanned_result {
+    const auto partition_point{rng::partition_point(partitioned, [](const auto& result) {
+      return result.has_value();
+    })};
+    return {
+         .files{
+              std::span{partitioned.begin(), partition_point}
+              | vws::filter([](const scan_result& r) { return r->is_regular_file(); })
+              | vws::as_rvalue
+              | vws::transform([](const scan_result& r) { return r->path(); })
+              | rng::to<std::vector>()
+         },
+         .errors{
+              std::span{partition_point, partitioned.end()}
+              | std::views::as_rvalue
+              | vws::transform([](const scan_result& r) { return r.error(); })
+              | rng::to<std::vector>()
+         }
+    };
   }
 
 } // namespace fs_ops::new_scanner
