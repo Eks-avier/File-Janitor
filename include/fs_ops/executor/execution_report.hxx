@@ -22,7 +22,8 @@ namespace fs_ops::executor
     [[nodiscard]] auto processed_count() const noexcept -> int;
     [[nodiscard]] auto failure_count() const noexcept -> std::int64_t;
     [[nodiscard]] auto skipped_count() const noexcept -> std::int64_t;
-    [[nodiscard]] auto failures() const noexcept -> std::span<const failed_operation>;
+    [[nodiscard]] auto failures() const noexcept
+                -> std::span<const failed_operation>;
 
     template <typename Self>
     auto with_processed(this Self&& self) noexcept -> Self&&
@@ -56,8 +57,8 @@ namespace fs_ops::executor
     execution_report() = default;
 
     std::vector<failed_operation> failures_{};
-    int                          processed_count_{0};
-    int                          success_count_{0};
+    int                           processed_count_{0};
+    int                           success_count_{0};
   };
 } // namespace fs_ops::executor
 

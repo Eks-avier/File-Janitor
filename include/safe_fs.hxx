@@ -11,13 +11,17 @@
 
 namespace safe_fs
 {
-  [[nodiscard]] auto safe_scan(std::filesystem::path path) -> std::generator<ScanResult>;
+  [[nodiscard]] auto safe_scan(std::filesystem::path path)
+              -> std::generator<ScanResult>;
 
   [[nodiscard]] auto exists(const std::filesystem::path& path) noexcept -> bool;
 
-  [[nodiscard]] auto rename(const std::filesystem::path& from, const std::filesystem::path& to) -> VoidResult;
+  [[nodiscard]] auto
+  rename(const std::filesystem::path& from, const std::filesystem::path& to)
+              -> VoidResult;
 
-  [[nodiscard]] auto create_directories(const std::filesystem::path& path) -> VoidResult;
+  [[nodiscard]] auto create_directories(const std::filesystem::path& path)
+              -> VoidResult;
 
 } // namespace safe_fs
 

@@ -15,15 +15,9 @@ module filejanitor;
 
 namespace fs_ops::executor
 {
-  auto execution_report::success_count() const noexcept -> int
-  {
-    return success_count_;
-  }
+  auto execution_report::success_count() const noexcept -> int { return success_count_; }
 
-  auto execution_report::processed_count() const noexcept -> int
-  {
-    return processed_count_;
-  }
+  auto execution_report::processed_count() const noexcept -> int { return processed_count_; }
 
   auto execution_report::failure_count() const noexcept -> std::int64_t
   {
@@ -35,8 +29,7 @@ namespace fs_ops::executor
     return processed_count_ - success_count_ - failure_count();
   }
 
-  auto execution_report::failures() const noexcept
-              -> std::span<const fs_ops::failed_operation>
+  auto execution_report::failures() const noexcept -> std::span<const fs_ops::failed_operation>
   {
     return failures_;
   }

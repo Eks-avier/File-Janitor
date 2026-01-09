@@ -40,23 +40,23 @@ target_compile_options(
 
 # GCC-specific warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(
-            CompileSettings
-            INTERFACE
-            -Wlogical-op
-            -Wuseless-cast
-            -Wduplicated-cond
-            -Wduplicated-branches)
+  target_compile_options(
+          CompileSettings
+          INTERFACE
+          -Wlogical-op
+          -Wuseless-cast
+          -Wduplicated-cond
+          -Wduplicated-branches)
 endif ()
 
 # Clang-specific warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(
-            CompileSettings
-            INTERFACE
-            -Wthread-safety
-            -Wloop-analysis
-            -Wno-missing-braces)
+  target_compile_options(
+          CompileSettings
+          INTERFACE
+          -Wthread-safety
+          -Wloop-analysis
+          -Wno-missing-braces)
 endif ()
 
 # Enable libstdc++ assertions in Debug builds
@@ -67,7 +67,6 @@ target_compile_definitions(
 # THIRD-PARTY DEPENDENCIES
 # =============================================================================
 find_package(fmt CONFIG REQUIRED)
-find_package(scn CONFIG REQUIRED)
 
 # =============================================================================
 # MODULE LIBRARY: filejanitor
@@ -116,11 +115,11 @@ target_link_libraries(filejanitor
         PRIVATE fmt::fmt)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_link_libraries(filejanitor PRIVATE stdc++exp)
+  target_link_libraries(filejanitor PRIVATE stdc++exp)
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_link_libraries(filejanitor PRIVATE stdc++exp)
+  target_link_libraries(filejanitor PRIVATE stdc++exp)
 endif ()
 
 # =============================================================================
@@ -132,11 +131,11 @@ target_link_libraries(Main
         PRIVATE fmt::fmt)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_link_libraries(Main PRIVATE stdc++exp)
+  target_link_libraries(Main PRIVATE stdc++exp)
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_link_libraries(Main PRIVATE stdc++exp)
+  target_link_libraries(Main PRIVATE stdc++exp)
 endif ()
 
 # =============================================================================

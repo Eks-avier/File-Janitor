@@ -25,10 +25,8 @@ namespace fs_ops
     return operation_result{operation_status::success};
   }
 
-  auto operation_result::create_failure(
-              const successful_operation& o,
-              const std::error_code       ec
-  ) -> operation_result
+  auto operation_result::create_failure(const successful_operation& o, const std::error_code ec)
+              -> operation_result
   {
     return operation_result{operation_status::failure}.with_failure(o, ec);
   }
@@ -42,8 +40,7 @@ namespace fs_ops
   auto operation_result::failure() const
               -> std::optional<std::reference_wrapper<const failed_operation>>
   {
-    return status_ != operation_status::failure ? std::nullopt
-                                                : std::optional{std::cref(failure_)};
+    return status_ != operation_status::failure ? std::nullopt : std::optional{std::cref(failure_)};
   }
 
 } // namespace fs_ops

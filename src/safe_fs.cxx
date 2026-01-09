@@ -30,8 +30,7 @@ namespace safe_fs
       co_return;
     }
 
-    for ( const auto end_it{fs::directory_iterator{}}; dir_it != end_it;
-          dir_it.increment(ec) )
+    for ( const auto end_it{fs::directory_iterator{}}; dir_it != end_it; dir_it.increment(ec) )
     {
       if ( ec )
       {
