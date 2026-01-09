@@ -8,7 +8,6 @@ export import :execution_report;
 export import :movement_plan;
 
 // Declare and export executor function
-export namespace fs_ops::executor
-{
+export namespace fs_ops::executor {
   [[nodiscard]] auto execute_plan(const movement_plan& plan) -> execution_report;
 }

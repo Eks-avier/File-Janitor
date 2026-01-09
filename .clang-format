@@ -3,7 +3,7 @@ Language: Cpp
 Standard: c++20
 
 # Line Length and Whitespace
-ColumnLimit: 100
+ColumnLimit: 120
 MaxEmptyLinesToKeep: 1
 KeepEmptyLinesAtTheStartOfBlocks: false
 InsertNewlineAtEOF: true
@@ -18,7 +18,7 @@ IndentPPDirectives: AfterHash
 IndentRequiresClause: true
 
 # Alignment
-AlignAfterOpenBracket: Align
+AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: Left
 AlignConsecutiveAssignments:
   Enabled: true
@@ -115,7 +115,10 @@ SpaceBeforeSquareBrackets: false
 SpacesInAngles: Never
 SpacesInParens: Custom
 SpacesInParensOptions:
+  ExceptDoubleParentheses: false
   InConditionalStatements: true
+  InCStyleCasts: false
+  InEmptyParentheses: false
   Other: false
 SpacesInSquareBrackets: false
 

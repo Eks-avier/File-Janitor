@@ -35,9 +35,7 @@ namespace {
   }
 
   auto build_candidate(const fs::path& target) -> candidate {
-    return {.parent{target.parent_path()},
-            .stem{target.stem().string()},
-            .extension{target.extension().string()}};
+    return {.parent{target.parent_path()}, .stem{target.stem().string()}, .extension{target.extension().string()}};
   }
 
   auto make_candidate_path(const candidate& c, int idx) -> fs::path {
@@ -56,7 +54,7 @@ namespace {
 
   auto find_valid_candidate(const std::vector<fs::path>& c_paths) -> std::optional<fs::path> {
     const auto end_it{c_paths.end()};
-    const auto result_it{c_paths, [](const fs::path& c) { return not safe_fs::exists(c); }};
+    const auto result_it{rng::find_if(c_paths, [](const fs::path& c) { return not safe_fs::exists(c); })};
     return result_it != end_it ? std::optional{*result_it} : std::nullopt;
   }
 
@@ -65,16 +63,12 @@ namespace {
   }
 
   auto resolve_collision(const fs::path& target) -> fs::path {
-    return does_target_exist(target)
-                .or_else([&target] { return make_valid_candidate(target); })
-                .value_or(target);
+    return does_target_exist(target).or_else([&target] { return make_valid_candidate(target); }).value_or(target);
   }
 
   // TODO: Separate performing the move from resolving name collisions
 
-  auto ensure_directory(const fs::path& dir) -> VoidResult {
-    return safe_fs::create_directories(dir);
-  }
+  auto ensure_directory(const fs::path& dir) -> VoidResult { return safe_fs::create_directories(dir); }
 
   auto perform_move(const successful_operation& op) -> VoidResult {
     return ensure_directory(op.destination.parent_path()).and_then([&op] {
@@ -92,15 +86,12 @@ namespace {
     }();
   }
 
-  auto accumulate_reports(execution_report&& report, const operation_result& result)
-              -> execution_report {
+  auto accumulate_reports(execution_report&& report, const operation_result& result) -> execution_report {
     using enum operation_status;
 
-    switch ( result.status() )
-    {
+    switch ( result.status() ) {
     case success: return std::move(report).with_processed().with_success().finalize();
-    case failure:
-      return std::move(report).with_processed().with_failure(result.failure()->get()).finalize();
+    case failure: return std::move(report).with_processed().with_failure(result.failure()->get()).finalize();
     case skipped: return std::move(report).with_processed().finalize();
     }
 
@@ -110,8 +101,10 @@ namespace {
 
 namespace fs_ops::executor {
   auto execute_plan(const movement_plan& plan) -> execution_report {
-    return rng::fold_left(plan.operations | vws::transform(process_operation),
-                          execution_report::start(),
-                          accumulate_reports);
+    return rng::fold_left(
+                plan.operations | vws::transform(process_operation),
+                execution_report::start(),
+                accumulate_reports
+    );
   }
 } // namespace fs_ops::executor

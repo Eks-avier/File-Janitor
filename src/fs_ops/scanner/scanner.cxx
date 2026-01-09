@@ -53,30 +53,30 @@ namespace fs_ops::scanner {
 } // namespace fs_ops::scanner
 
 namespace fs_ops::new_scanner {
-  auto scanner::collect_from(const fs::path& target) noexcept -> result_type<scanner> {
+  auto scanner::collect_from(const fs::path& target) noexcept -> result_t<scanner> {
     const auto result{exists(target).and_then(scan).transform(to_partitioned).transform(to_scanned)};
-    return result.has_value() ? result_type<scanner>{std::in_place, passkey, *result}
-                              : result_type<scanner>{std::unexpect, result.error()};
+    return result.has_value() ? result_t<scanner>{std::in_place, key, *result}
+                              : result_t<scanner>{std::unexpect, result.error()};
   }
 
-  auto scanner::view() const noexcept -> collection_view { return m_result.files; }
-  auto scanner::own() const noexcept -> scanned_files { return m_result.files; }
+  auto scanner::take() && noexcept -> output_t { return std::move(m_output); }
+  auto scanner::view() const noexcept -> const output_t& { return m_output; }
 
-  scanner::scanner(scanned_result result) noexcept
-      : m_result{std::move(result)} {}
+  scanner::scanner(output_t result) noexcept
+      : m_output{std::move(result)} {}
 
-  scanner::scanner(key_t, scanned_result result) noexcept
-      : m_result{std::move(result)} {}
+  scanner::scanner(key_t, output_t result) noexcept
+      : m_output{std::move(result)} {}
 
-  auto scanner::exists(const fs::path& target) noexcept -> result_type<std::filesystem::path> {
-    return safe_fs::exists(target) ? result_type<fs::path>{std::in_place, target}
-                                   : result_type<fs::path>{std::unexpect, scanner_state::target_not_found};
+  auto scanner::exists(const fs::path& target) noexcept -> result_t<fs::path> {
+    return safe_fs::exists(target) ? result_t<fs::path>{std::in_place, target}
+                                   : result_t<fs::path>{std::unexpect, state_t::target_not_found};
   }
 
-  auto scanner::scan(const fs::path& target) noexcept -> result_type<std::vector<scan_result>> {
+  auto scanner::scan(const fs::path& target) noexcept -> result_t<std::vector<scan_result>> {
     const auto result = rng::to<std::vector>(safe_fs::safe_scan(target));
-    return result.empty() ? result_type<std::vector<scan_result>>{std::unexpect, scanner_state::no_files}
-                          : result_type<std::vector<scan_result>>{std::in_place, result};
+    return result.empty() ? result_t<std::vector<scan_result>>{std::unexpect, state_t::no_files}
+                          : result_t<std::vector<scan_result>>{std::in_place, result};
   }
 
   auto scanner::to_partitioned(std::vector<scan_result> raw) noexcept -> std::vector<scan_result> {
@@ -85,21 +85,17 @@ namespace fs_ops::new_scanner {
     return to_partition;
   }
 
-  auto scanner::to_scanned(std::vector<scan_result> partitioned) noexcept -> scanned_result {
-    const auto partition_point{rng::partition_point(partitioned, [](const auto& result) {
-      return result.has_value();
-    })};
+  auto scanner::to_scanned(const std::vector<scan_result>& partitioned) noexcept -> output_t {
+    const auto partition_point{rng::partition_point(partitioned, [](const scan_result& r) { return r.has_value(); })};
     return {
          .files{
               std::span{partitioned.begin(), partition_point}
               | vws::filter([](const scan_result& r) { return r->is_regular_file(); })
-              | vws::as_rvalue
               | vws::transform([](const scan_result& r) { return r->path(); })
               | rng::to<std::vector>()
          },
          .errors{
               std::span{partition_point, partitioned.end()}
-              | std::views::as_rvalue
               | vws::transform([](const scan_result& r) { return r.error(); })
               | rng::to<std::vector>()
          }
