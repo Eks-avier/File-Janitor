@@ -20,7 +20,7 @@ namespace vws = std::views;
 
 using namespace fs_ops;
 
-namespace {
+namespace /* TO BE DEPRECATED */ {
   auto to_lowercase(std::string_view string) -> std::string {
     return string | vws::transform([](const unsigned char& c) { return std::tolower(c); }) | rng::to<std::string>();
   }
@@ -120,36 +120,42 @@ namespace fs_ops::new_planner {
     }
   } // namespace
 
+  // TODO: Could make into std::optional / std::expected?
   auto planner_builder::from(std::pair<std::filesystem::path, raw_data_t> data) -> output_t {
-    // TODO: Write the pipeline here
+    auto&& [root, files]{data};
+    auto decorated{to_decorated(std::move(planner_builder{std::move(root), std::move(files)}))};
+    auto sorted{to_sorted(std::move(decorated))};
+    auto chunked{to_chunked(std::move(sorted))};
+    auto planned{to_planned(std::move(chunked))};
+    return to_planner(std::move(planned));
   }
 
   planner_builder::planner_builder(std::filesystem::path root, raw_data_t data) noexcept
       : m_root{std::move(root)}
-      , m_data{std::move(data)} {}
+      , m_files{std::move(data)} {}
 
-  auto planner_builder::to_decorated(planner_builder builder) -> std::vector<decorated_file> {
+  auto planner_builder::to_decorated(planner_builder&& builder) -> std::vector<decorated_file> {
     const auto& root = builder.m_root;
-    auto        data = std::move(builder.m_data);
-    return builder.m_data
+    auto        data = std::move(builder.m_files);
+    return data
            | vws::as_rvalue
            | vws::transform([&root](const fs::path& p) { return make_decorated(root, {p, p.extension()}); })
            | rng::to<std::vector>();
   }
-  auto planner_builder::to_sorted(std::vector<decorated_file> decorated) -> std::vector<decorated_file> {
+  auto planner_builder::to_sorted(std::vector<decorated_file>&& decorated) -> std::vector<decorated_file> {
     auto to_sort{std::move(decorated)};
     rng::sort(to_sort, {}, &decorated_file::extension);
     return to_sort;
   }
 
-  auto planner_builder::to_chunked(std::vector<decorated_file> sorted) -> std::vector<std::vector<decorated_file>> {
+  auto planner_builder::to_chunked(std::vector<decorated_file>&& sorted) -> std::vector<std::vector<decorated_file>> {
     return sorted
-           | vws::as_rvalue
            | vws::chunk_by([](const auto& a, const auto& b) { return a.extension == b.extension; })
            | vws::filter([](const auto& chunk) { return not chunk.empty(); })
+           | vws::as_rvalue
            | rng::to<std::vector<std::vector<decorated_file>>>();
   }
-  auto planner_builder::to_planned(std::vector<std::vector<decorated_file>> chunked) -> std::vector<planned_operation> {
+  auto planner_builder::to_planned(std::vector<std::vector<decorated_file>>&& chunked) -> planner_input_t {
     return chunked
            | vws::as_rvalue
            | vws::transform([](const auto& chunk) { return make_planned_operations(chunk); })
@@ -157,10 +163,14 @@ namespace fs_ops::new_planner {
            | rng::to<std::vector>();
   }
 
-  auto planner_builder::to_planner(std::vector<planned_operation> planned) -> planner {
+  auto planner_builder::to_planner(planner_input_t&& planned) -> planner {
     return planner{planner::key, std::move(planned)};
   }
 
   planner::planner(key_t, output_t output) noexcept
       : m_output{std::move(output)} {}
+
+  auto planner::view() const& noexcept -> const output_t& { return m_output; }
+  auto planner::take() && noexcept -> output_t { return std::move(m_output); }
+
 } // namespace fs_ops::new_planner

@@ -44,21 +44,25 @@ export namespace fs_ops::new_planner {
 
     enum class state_t {};
 
-    using output_t = std::optional<planner>;
+    using output_t        = std::optional<planner>;
+    using planner_input_t = std::vector<planned_operation>;
 
     static auto from(std::pair<std::filesystem::path, raw_data_t> data) -> output_t;
+
+    // TODO: Refine builder for future features
 
   private:
     planner_builder(std::filesystem::path root, raw_data_t data) noexcept;
 
-    static auto to_decorated(planner_builder builder) -> std::vector<decorated_file>;
-    static auto to_sorted(std::vector<decorated_file> decorated) -> std::vector<decorated_file>;
-    static auto to_chunked(std::vector<decorated_file> sorted) -> std::vector<std::vector<decorated_file>>;
-    static auto to_planned(std::vector<std::vector<decorated_file>> chunked) -> std::vector<planned_operation>;
-    static auto to_planner(std::vector<planned_operation> planned) -> planner;
+    static auto to_decorated(planner_builder&& builder) -> std::vector<decorated_file>;
+    static auto to_sorted(std::vector<decorated_file>&& decorated) -> std::vector<decorated_file>;
+    static auto to_chunked(std::vector<decorated_file>&& sorted) -> std::vector<std::vector<decorated_file>>;
+    static auto to_planned(std::vector<std::vector<decorated_file>>&& chunked) -> planner_input_t;
+    static auto to_planner(planner_input_t&& planned) -> planner;
 
+    // TODO: No invariants? Or set up for future invariants? Configs, strategies, etc.
     std::filesystem::path m_root{};
-    raw_data_t            m_data{};
+    raw_data_t            m_files{};
   };
 
   class planner {
